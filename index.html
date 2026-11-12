@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catholic Student Games</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #1a103c, #2b1d5e, #1e3a8a, #3b1d5e);
+      background-size: 400% 400%;
+      animation: gradientBG 14s ease infinite;
+      color: #ffffff;
+      padding: 40px 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Floating golden light particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      bottom: -20px;
+      background: radial-gradient(circle, rgba(255, 223, 107, 0.9) 0%, rgba(255, 223, 107, 0) 70%);
+      border-radius: 50%;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      20% { opacity: 0.8; }
+      80% { opacity: 0.6; }
+      100% { transform: translateY(-105vh) scale(0.4); opacity: 0; }
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header styling & glow */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeDown 0.8s ease-out;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.45);
+      color: #ffd700;
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ffffff, #ffe066, #ffffff);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shineText 5s linear infinite;
+      margin-bottom: 8px;
+    }
+
+    @keyframes shineText {
+      to { background-position: 200% center; }
+    }
+
+    p.subtitle {
+      color: #cbd5e1;
+      font-size: 1.05rem;
+    }
+
+    /* Chapter Section */
+    .chapter-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffd700;
+      margin: 30px 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+    }
+
+    .chapter-title::after {
+      content: "";
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.6), transparent);
+    }
+
+    /* Game Cards Grid */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 16px;
+    }
+
+    .game-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 18px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      text-decoration: none;
+      color: #ffffff;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.3s ease,
+                  border-color 0.3s ease,
+                  background 0.3s ease;
+      animation: cardPop 0.6s ease-out backwards;
+    }
+
+    /* Staggered entrance animation */
+    .game-card:nth-child(1) { animation-delay: 0.1s; }
+    .game-card:nth-child(2) { animation-delay: 0.2s; }
+    .game-card:nth-child(3) { animation-delay: 0.3s; }
+    .game-card:nth-child(4) { animation-delay: 0.4s; }
+    .game-card:nth-child(5) { animation-delay: 0.5s; }
+    .game-card:nth-child(6) { animation-delay: 0.6s; }
+
+    @keyframes cardPop {
+      from { opacity: 0; transform: translateY(25px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Light sweep effect across card on hover */
+    .game-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+      transform: skewX(-25deg);
+      transition: left 0.6s ease;
+    }
+
+    .game-card:hover::before {
+      left: 140%;
+    }
+
+    .game-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      background: rgba(255, 255, 255, 0.18);
+      border-color: #ffd700;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), 0 0 18px rgba(255, 215, 0, 0.35);
+    }
+
+    .game-card:active {
+      transform: translateY(-1px) scale(0.99);
+    }
+
+    .icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      transition: transform 0.3s ease;
+    }
+
+    .game-card:hover .icon-box {
+      transform: rotate(-8deg) scale(1.12);
+    }
+
+    /* Distinct colorful badges per game */
+    .c1 { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+    .c2 { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+    .c3 { background: linear-gradient(135deg, #10b981, #059669); }
+    .c4 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+    .c5 { background: linear-gradient(135deg, #f97316, #eab308); }
+    .c6 { background: linear-gradient(135deg, #6366f1, #3b82f6); }
+
+    .game-info {
+      flex: 1;
+    }
+
+    .game-number {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #ffd700;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .game-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .play-arrow {
+      font-size: 1.2rem;
+      color: #ffd700;
+      opacity: 0.7;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .game-card:hover .play-arrow {
+      transform: translateX(5px);
+      opacity: 1;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Light Particles Container -->
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <header>
+      <div class="badge">✨ Interactive Faith Games ✨</div>
+      <h1>Catholic Student Games</h1>
+      <p class="subtitle">Choose a challenge below to test your knowledge and grow in faith</p>
+    </header>
+
+    <!-- CHAPTER 9 -->
+    <div class="chapter-title">📖 Chapter 9</div>
+    <div class="game-grid">
+
+      <a href="ch-9-game-1-mind-clear.html" class="game-card">
+        <div class="icon-box c1">🧠</div>
+        <div class="game-info">
+          <span class="game-number">Game 1</span>
+          <div class="game-name">Mind Clear</div>
+        </div>
+        <div class="play-arrow">▶</div>
+      </a>
+
+      <a href="ch-9-game-2-our-father.html" class="game-card">
+        <div class="icon-box c2">🙏</div>
+        <div class="game-info">
+          <span class="game-number">Game 2</span>
+          <div class="game-name">Our Father</div>
+        </div>
+        <div class="play-arrow">▶</div>
+      </a>
+
+      <a href="ch-9-game-3-lectio-divina-journey.html" class="game-card">
+        <div class="icon-box c3">🕊️</div>
+        <div class="game-info">
+          <span class="game-number">Game 3</span>
+          <div class="game-name">Lectio Divina Journey</div>
+        </div>
+        <div class="play-arrow">▶</div>
+      </a>
+
+      <a href="ch-9-game-4-interactive-bible.html" class="game-card">
+        <div class="icon-box c4">📜</div>
+        <div class="game-info">
+          <span class="game-number">Game 4</span>
+          <div class="game-name">Interactive Bible</div>
+        </div>
+        <div class="play-arrow">▶</div>
+      </a>
+
+      <a href="ch-9-game-5-holy_spirit_gifts-fruits.html" class="game-card">
+        <div class="icon-box c5">🔥</div>
+        <div class="game-info">
+          <span class="game-number">Game 5</span>
+          <div class="game-name">Holy Spirit Gifts &amp; Fruits</div>
+        </div>
+        <div class="play-arrow">▶</div>
+      </a>
+
+      <a href="ch-9-game-6-vocabulary-flash.html" class="game-card">
+        <div class="icon-box c6">⚡</div>
+        <div class="game-info">
+          <span class="game-number">Game 6</span>
+          <div class="game-name">Vocabulary Flash</div>
+        </div>
+        <div class="play-arrow">▶</div>
+      </a>
+
+    </div>
+
+    <!-- To add Chapter 10 later, copy from <div class="chapter-title"> down to </div> and paste here! -->
+
+    <footer>
+      Select any card above to start playing
+    </footer>
+  </div>
+
+  <script>
+    // Generate floating golden light particles
+    const particleContainer = document.getElementById('particles');
+    for (let i = 0; i < 25; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      const size = Math.random() * 8 + 4;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (Math.random() * 10 + 8) + 's';
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      particleContainer.appendChild(p);
+    }
+  </script>
+
+</body>
+</html>
