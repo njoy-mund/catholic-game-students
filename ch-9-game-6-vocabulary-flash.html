@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 9 Vocabulary Challenge</title>
+<style>
+  :root {
+    --bg-dark: #0f172a;
+    --bg-card: rgba(30, 41, 59, 0.88);
+    --gold: #f59e0b;
+    --gold-light: #fcd34d;
+    --text-main: #f8fafc;
+    --text-muted: #cbd5e1;
+    --accent-blue: #38bdf8;
+    --success: #10b981;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+  body {
+    background: linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0f172a 100%);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+  }
+  .bg-canvas {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(55px);
+    opacity: 0.45;
+    animation: floatOrb 16s infinite alternate ease-in-out;
+  }
+  .orb-1 { width: 320px; height: 320px; background: #4f46e5; top: -60px; left: -60px; }
+  .orb-2 { width: 380px; height: 380px; background: #b45309; bottom: -80px; right: -80px; animation-delay: -5s; }
+  .orb-3 { width: 250px; height: 250px; background: #0284c7; top: 45%; left: 55%; animation-delay: -10s; }
+  .particle {
+    position: absolute;
+    bottom: -20px;
+    background: radial-gradient(circle, #fde68a, transparent);
+    border-radius: 50%;
+    animation: riseUp linear infinite;
+  }
+  @keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(45px, 35px) scale(1.15); }
+  }
+  @keyframes riseUp {
+    0% { transform: translateY(0) scale(1); opacity: 0; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.6; }
+    100% { transform: translateY(-105vh) scale(0.3); opacity: 0; }
+  }
+  .container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 780px;
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+  }
+  h1 { font-size: 1.5rem; color: var(--gold-light); letter-spacing: 0.4px; }
+  .hud { display: flex; gap: 14px; align-items: center; font-weight: 600; font-size: 0.95rem; }
+  .badge {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: 10px;
+  }
+  .btn {
+    background: linear-gradient(135deg, var(--gold), #d97706);
+    color: #0f172a;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4); }
+  .btn-secondary {
+    background: rgba(56, 189, 248, 0.18);
+    color: var(--accent-blue);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+  }
+  .hidden { display: none !important; }
+  .flashcard-wrap { perspective: 1000px; margin: 18px 0; }
+  .flashcard {
+    width: 100%;
+    min-height: 210px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .flashcard:hover { border-color: var(--gold-light); transform: scale(1.01); }
+  .fc-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); margin-bottom: 10px; }
+  .fc-content { font-size: 1.35rem; line-height: 1.55; }
+  .controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .question-box {
+    background: rgba(15, 23, 42, 0.75);
+    border-left: 4px solid var(--gold);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 1.15rem;
+    line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .option-btn {
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--text-main);
+    padding: 15px 18px;
+    border-radius: 12px;
+    text-align: left;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .option-btn:hover { background: rgba(51, 65, 85, 0.95); border-color: var(--gold); }
+  .option-btn.correct { background: rgba(16, 185, 129, 0.25); border-color: var(--success); color: #6ee7b7; }
+  .option-btn.wrong { background: rgba(239, 68, 68, 0.25); border-color: var(--danger); color: #fca5a5; }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 13, 22, 0.92);
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .modal {
+    background: #1e293b;
+    border: 2px solid var(--danger);
+    border-radius: 18px;
+    padding: 32px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+  }
+  .countdown { font-size: 3rem; font-weight: 800; color: var(--gold-light); margin: 14px 0; }
+  .status-msg { min-height: 24px; margin-top: 12px; font-weight: 600; color: var(--gold-light); text-align: center; }
+</style>
+</head>
+<body>
+<div class="bg-canvas" id="bgCanvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<div class="container">
+  <header>
+    <h1>Chapter 9 Vocabulary</h1>
+    <div class="hud">
+      <button class="btn btn-secondary" id="soundToggle">Sound: ON</button>
+      <div class="badge hidden" id="timerBadge">Time: 0.0s</div>
+      <div class="badge hidden" id="livesBadge">Free Mistakes: 2</div>
+    </div>
+  </header>
+
+  <section id="studyStage">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <p style="color:var(--text-muted);">Stage 1: Click the card to flip between term and definition.</p>
+      <button class="btn" id="skipToGameBtn">Skip to Game &rarr;</button>
+    </div>
+    <div class="flashcard-wrap">
+      <div class="flashcard" id="flashcard">
+        <div class="fc-label" id="fcSide">TERM (1 / 12)</div>
+        <div class="fc-content" id="fcText"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-secondary" id="prevCardBtn">&larr; Previous</button>
+      <span id="cardCounter" style="color:var(--text-muted); font-weight:600;">Card 1 of 12</span>
+      <button class="btn btn-secondary" id="nextCardBtn">Next &rarr;</button>
+    </div>
+    <div style="text-align:center; margin-top:22px;">
+      <button class="btn" id="startGameBtn" style="font-size:1.05rem; padding:12px 26px;">Start Timed Quiz Challenge</button>
+    </div>
+  </section>
+
+  <section id="gameStage" class="hidden">
+    <div style="display:flex; justify-content:space-between; margin-bottom:10px; color:var(--text-muted); font-weight:600;">
+      <span id="progressText">Question 1 of 12</span>
+      <span>Single-click only! Multi-clicking triggers a penalty.</span>
+    </div>
+    <div class="question-box" id="questionText"></div>
+    <div class="options-grid" id="optionsGrid"></div>
+    <div class="status-msg" id="feedbackMsg"></div>
+  </section>
+
+  <section id="winStage" class="hidden" style="text-align:center; padding:16px 0;">
+    <h2 style="font-size:2rem; color:var(--success); margin-bottom:10px;">Challenge Completed!</h2>
+    <p style="font-size:1.15rem; color:var(--text-muted); margin-bottom:18px;">You matched all 12 Chapter 9 vocabulary terms.</p>
+    <div class="badge" style="display:inline-block; font-size:1.4rem; padding:12px 24px; margin-bottom:22px;" id="finalTimeText">Total Time: 0.0s</div>
+    <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+      <button class="btn btn-secondary" id="backToStudyBtn">Review Flashcards</button>
+      <button class="btn" id="playAgainBtn">Play Again (New Order)</button>
+    </div>
+  </section>
+</div>
+
+<div class="overlay hidden" id="penaltyOverlay">
+  <div class="modal">
+    <h2 style="color:var(--danger); font-size:1.6rem; margin-bottom:8px;">Game Over &amp; Penalty Pause!</h2>
+    <p id="penaltyReason" style="color:var(--text-muted); line-height:1.5;">You exceeded your free mistakes or multi-clicked.</p>
+    <div class="countdown" id="countdownDisplay">15</div>
+    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:16px;">Please wait 15 seconds before restarting.</p>
+    <button class="btn hidden" id="restartAfterPenaltyBtn">Restart Game</button>
+  </div>
+</div>
+<script>
+const VOCAB = [
+  { term: "Blessed Sacrament", def: "The name given to the Holy Eucharist, especially the consecrated elements reserved in the tabernacle for adoration, or for the sick." },
+  { term: "contemplative prayer", def: "Wordless prayer wherein a person's mind and heart rest in God's goodness and majesty." },
+  { term: "contrition", def: "Heartfelt sorrow and aversion for sins committed along with the intention of sinning no more; necessary for receiving the Sacrament of Penance." },
+  { term: "icon", def: "A holy image you gaze at, putting yourself in the presence of the holy person or mystery it portrays." },
+  { term: "Jesus Prayer", def: "A short, formulaic prayer to Jesus or about Jesus that is said repeatedly, originating with the Desert Fathers in the fifth century." },
+  { term: "lectio divina", def: "Literally 'sacred reading'; a prayerful way to read the Bible or other sacred writings." },
+  { term: "litany", def: "From the Greek word litaneia meaning 'prayer or supplication,' a form of prayer used in liturgies that includes prayers with responses." },
+  { term: "Liturgy of the Hours", def: "The official daily prayer of the Church, also known as the Divine Office, consisting of prayers, Scripture, and reflections throughout the day." },
+  { term: "monasticism", def: "A way of Christian life that stresses communal worship along with private prayer, silence, poverty, chastity, and obedience." },
+  { term: "novena", def: "From the Latin word for 'nine,' a set of prayers prayed over nine days in order to obtain special graces or petition for intentions." },
+  { term: "Psalter", def: "A name for the Book of Psalms or a collection of psalms for liturgical or devotional use." },
+  { term: "votive candle", def: "A prayer candle typically placed before a statue of Jesus, the Virgin Mary, or a saint and lit for a prayer intention." }
+];
+
+// Create floating background light particles
+const bgCanvas = document.getElementById("bgCanvas");
+for (let i = 0; i < 28; i++) {
+  const p = document.createElement("div");
+  p.className = "particle";
+  const size = Math.random() * 8 + 4;
+  p.style.width = size + "px";
+  p.style.height = size + "px";
+  p.style.left = Math.random() * 100 + "%";
+  p.style.animationDuration = (Math.random() * 10 + 8) + "s";
+  p.style.animationDelay = (Math.random() * 10) + "s";
+  bgCanvas.appendChild(p);
+}
+
+// Web Audio API Sound Effects
+let soundEnabled = true;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type, duration, delay = 0) {
+  if (!soundEnabled) return;
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + delay);
+  osc.stop(audioCtx.currentTime + delay + duration);
+}
+const sfx = {
+  flip: () => playTone(520, "sine", 0.12),
+  correct: () => { playTone(587.33, "triangle", 0.15); playTone(880, "triangle", 0.25, 0.12); },
+  warn: () => { playTone(260, "sawtooth", 0.2); playTone(210, "sawtooth", 0.25, 0.15); },
+  gameover: () => { playTone(220, "sawtooth", 0.25); playTone(185, "sawtooth", 0.25, 0.2); playTone(140, "sawtooth", 0.45, 0.4); },
+  win: () => { playTone(523.25, "triangle", 0.15); playTone(659.25, "triangle", 0.15, 0.14); playTone(783.99, "triangle", 0.15, 0.28); playTone(1046.5, "triangle", 0.35, 0.42); }
+};
+
+document.getElementById("soundToggle").onclick = (e) => {
+  soundEnabled = !soundEnabled;
+  e.target.textContent = "Sound: " + (soundEnabled ? "ON" : "OFF");
+};
+
+// Flashcards Logic
+let cardIdx = 0;
+let showingDef = false;
+function renderCard() {
+  const item = VOCAB[cardIdx];
+  document.getElementById("fcSide").textContent = (showingDef ? "DEFINITION" : "TERM") + ` (${cardIdx + 1} / ${VOCAB.length})`;
+  document.getElementById("fcText").textContent = showingDef ? item.def : item.term;
+  document.getElementById("cardCounter").textContent = `Card ${cardIdx + 1} of ${VOCAB.length}`;
+}
+document.getElementById("flashcard").onclick = () => { showingDef = !showingDef; sfx.flip(); renderCard(); };
+document.getElementById("prevCardBtn").onclick = () => { cardIdx = (cardIdx - 1 + VOCAB.length) % VOCAB.length; showingDef = false; sfx.flip(); renderCard(); };
+document.getElementById("nextCardBtn").onclick = () => { cardIdx = (cardIdx + 1) % VOCAB.length; showingDef = false; sfx.flip(); renderCard(); };
+renderCard();
+
+// Game State & Strict Single-Click + Penalty Logic
+let questions = [];
+let currentQ = 0;
+let freeMistakes = 2;
+let lockedForQuestion = false;
+let gameActive = false;
+let startTime = 0;
+let timerInterval = null;
+let penaltyInterval = null;
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+  questions = shuffle(VOCAB);
+  currentQ = 0;
+  freeMistakes = 2;
+  lockedForQuestion = false;
+  gameActive = true;
+
+  document.getElementById("studyStage").classList.add("hidden");
+  document.getElementById("winStage").classList.add("hidden");
+  document.getElementById("penaltyOverlay").classList.add("hidden");
+  document.getElementById("gameStage").classList.remove("hidden");
+  document.getElementById("timerBadge").classList.remove("hidden");
+  document.getElementById("livesBadge").classList.remove("hidden");
+  updateLivesHUD();
+
+  startTime = performance.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+    document.getElementById("timerBadge").textContent = `Time: ${elapsed}s`;
+  }, 100);
+
+  renderQuestion();
+}
+
+function updateLivesHUD() {
+  document.getElementById("livesBadge").textContent = `Free Mistakes Left: ${freeMistakes}`;
+}
+
+function triggerPenalty(reason) {
+  gameActive = false;
+  clearInterval(timerInterval);
+  sfx.gameover();
+
+  document.getElementById("penaltyReason").textContent = reason;
+  document.getElementById("penaltyOverlay").classList.remove("hidden");
+  const restartBtn = document.getElementById("restartAfterPenaltyBtn");
+  const cdDisplay = document.getElementById("countdownDisplay");
+  restartBtn.classList.add("hidden");
+
+  let secondsLeft = 15;
+  cdDisplay.textContent = secondsLeft;
+  clearInterval(penaltyInterval);
+  penaltyInterval = setInterval(() => {
+    secondsLeft--;
+    cdDisplay.textContent = secondsLeft;
+    if (secondsLeft <= 0) {
+      clearInterval(penaltyInterval);
+      cdDisplay.textContent = "Ready";
+      restartBtn.classList.remove("hidden");
+    }
+  }, 1000);
+}
+
+function renderQuestion() {
+  lockedForQuestion = false;
+  document.getElementById("feedbackMsg").textContent = "";
+  const q = questions[currentQ];
+  document.getElementById("progressText").textContent = `Question ${currentQ + 1} of ${questions.length}`;
+  document.getElementById("questionText").textContent = q.def;
+
+  const distractors = shuffle(VOCAB.filter(v => v.term !== q.term)).slice(0, 3);
+  const choices = shuffle([q, ...distractors]);
+  const grid = document.getElementById("optionsGrid");
+  grid.innerHTML = "";
+
+  choices.forEach(choice => {
+    const btn = document.createElement("button");
+    btn.className = "option-btn";
+    btn.textContent = choice.term;
+    btn.onclick = () => handleAnswer(btn, choice.term === q.term);
+    grid.appendChild(btn);
+  });
+}
+
+function handleAnswer(btn, isCorrect) {
+  if (!gameActive) return;
+
+  // Detect rapid multi-click while transitioning
+  if (lockedForQuestion) {
+    triggerPenalty("Multi-click detected! Only one click is allowed per question.");
+    return;
+  }
+
+  lockedForQuestion = true;
+
+  if (isCorrect) {
+    btn.classList.add("correct");
+    sfx.correct();
+    document.getElementById("feedbackMsg").textContent = "Correct!";
+    setTimeout(() => {
+      if (!gameActive) return;
+      currentQ++;
+      if (currentQ >= questions.length) {
+        finishGame();
+      } else {
+        renderQuestion();
+      }
+    }, 650);
+  } else {
+    btn.classList.add("wrong");
+    if (freeMistakes > 0) {
+      freeMistakes--;
+      updateLivesHUD();
+      sfx.warn();
+      document.getElementById("feedbackMsg").textContent = `Incorrect! Free mistake used (${freeMistakes} left). Try again carefully!`;
+      setTimeout(() => {
+        if (!gameActive) return;
+        btn.classList.remove("wrong");
+        lockedForQuestion = false;
+      }, 650);
+    } else {
+      triggerPenalty("3rd mistake made! No free mistakes remaining.");
+    }
+  }
+}
+
+function finishGame() {
+  gameActive = false;
+  clearInterval(timerInterval);
+  sfx.win();
+  const totalTime = ((performance.now() - startTime) / 1000).toFixed(1);
+  document.getElementById("gameStage").classList.add("hidden");
+  document.getElementById("winStage").classList.remove("hidden");
+  document.getElementById("finalTimeText").textContent = `Total Time Used: ${totalTime} seconds`;
+}
+
+document.getElementById("skipToGameBtn").onclick = startGame;
+document.getElementById("startGameBtn").onclick = startGame;
+document.getElementById("playAgainBtn").onclick = startGame;
+document.getElementById("restartAfterPenaltyBtn").onclick = startGame;
+document.getElementById("backToStudyBtn").onclick = () => {
+  document.getElementById("winStage").classList.add("hidden");
+  document.getElementById("timerBadge").classList.add("hidden");
+  document.getElementById("livesBadge").classList.add("hidden");
+  document.getElementById("studyStage").classList.remove("hidden");
+};
+</script>
+</body>
+</html>

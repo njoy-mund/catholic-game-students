@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Lectio Divina Journey - Sacred Reading</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #064e3b 0%, #0f766e 50%, #1e3a8a 100%);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 24px; color: #f8fafc;
+    }
+    .header { text-align: center; margin-bottom: 16px; max-width: 820px; animation: fadeDown 0.7s ease; }
+    .header h1 {
+      font-size: 2.2rem; color: #fde68a; margin-bottom: 6px;
+      text-shadow: 0 2px 12px rgba(253, 230, 138, 0.35);
+    }
+    .header p { font-size: 1rem; color: #d1fae5; }
+    .journey-wrapper { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 18px; }
+    /* 5-Stage Progress Stepper */
+    .stepper-bar {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+      background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px);
+      padding: 14px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .step-pill {
+      background: rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 10px 6px;
+      text-align: center; font-size: 0.78rem; color: #a7f3d0;
+      transition: all 0.4s ease; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .step-pill strong { font-size: 0.85rem; color: #ffffff; }
+    .step-pill.active {
+      background: linear-gradient(135deg, #fef3c7, #fde68a); color: #78350f;
+      transform: translateY(-3px); box-shadow: 0 6px 16px rgba(251, 191, 36, 0.35);
+    }
+    .step-pill.active strong { color: #92400e; }
+    .step-pill.done {
+      background: rgba(16, 185, 129, 0.35); border: 1px solid #34d399; color: #ecfdf5;
+    }
+    .room-card {
+      background: rgba(255, 255, 255, 0.97); border-radius: 24px;
+      padding: 28px; color: #1e293b; border: 3px solid #34d399;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35); animation: slideUp 0.45s ease;
+    }
+    .room-tag {
+      display: inline-block; background: #d1fae5; color: #065f46;
+      padding: 5px 14px; border-radius: 20px; font-size: 0.82rem;
+      font-weight: 700; margin-bottom: 10px;
+    }
+    .room-title { font-size: 1.55rem; color: #064e3b; margin-bottom: 8px; }
+    .room-desc { font-size: 0.98rem; color: #475569; margin-bottom: 18px; line-height: 1.5; }
+    .passage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .passage-btn {
+      background: #f0fdf4; border: 2px solid #86efac; border-radius: 14px;
+      padding: 15px; text-align: left; cursor: pointer; transition: all 0.25s ease;
+    }
+    .passage-btn:hover { background: #dcfce7; border-color: #16a34a; transform: translateY(-2px); }
+    .passage-btn h4 { color: #14532d; margin-bottom: 4px; font-size: 1rem; }
+    .passage-btn span { font-size: 0.82rem; color: #15803d; font-weight: 600; }
+    /* Interactive Scripture Box */
+    .scripture-box {
+      background: #fffbeb; border-left: 5px solid #f59e0b; padding: 20px;
+      border-radius: 12px; font-size: 1.12rem; line-height: 1.8; color: #1f2937;
+      margin-bottom: 18px;
+    }
+    .word-token {
+      display: inline-block; padding: 2px 5px; margin: 1px; border-radius: 6px;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .word-token:hover { background: #fde68a; }
+    .word-token.selected {
+      background: #f59e0b; color: white; font-weight: bold;
+      transform: scale(1.06); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    }
+    .choice-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+    .choice-btn {
+      background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 12px;
+      padding: 13px 16px; text-align: left; font-size: 0.96rem; color: #1e293b;
+      cursor: pointer; transition: all 0.2s ease; font-weight: 500;
+    }
+    .choice-btn:hover { border-color: #0d9488; background: #f0fdfa; }
+    .choice-btn.picked { background: #ccfbf1; border-color: #0d9488; font-weight: 700; color: #115e59; }
+    /* Contemplation Breathing Circle */
+    .stillness-zone {
+      display: flex; flex-direction: column; align-items: center; padding: 20px;
+      background: radial-gradient(circle, #ecfdf5 0%, #d1fae5 100%);
+      border-radius: 18px; margin-bottom: 18px; text-align: center;
+    }
+    .breath-orb {
+      width: 110px; height: 110px; border-radius: 50%;
+      background: radial-gradient(circle, #fde68a, #34d399);
+      box-shadow: 0 0 25px rgba(52, 211, 153, 0.6);
+      animation: breathePulse 6s infinite ease-in-out; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; color: #064e3b; font-size: 0.9rem;
+    }
+    .action-btn {
+      background: linear-gradient(135deg, #059669, #047857); color: white;
+      border: none; padding: 12px 28px; font-size: 1rem; border-radius: 25px;
+      cursor: pointer; font-weight: bold; box-shadow: 0 6px 15px rgba(4, 120, 87, 0.3);
+    }
+    .action-btn:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
+    .summary-box {
+      background: #f0fdf4; border: 2px solid #86efac; border-radius: 16px;
+      padding: 18px; margin: 15px 0; line-height: 1.6;
+    }
+    .summary-box p { margin-bottom: 8px; }
+    @keyframes breathePulse { 0%, 100% { transform: scale(0.92); } 50% { transform: scale(1.16); } }
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 650px) { .stepper-bar { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>The Lectio Divina Journey</h1>
+    <p>Experience the five Benedictine steps of <strong>Sacred Reading</strong> from Chapter 9.</p>
+  </div>
+
+  <div class="journey-wrapper">
+    <div class="stepper-bar" id="stepper-bar">
+      <div class="step-pill" id="pill-1"><span>Step 1</span><strong>Lectio</strong><span>Reading</span></div>
+      <div class="step-pill" id="pill-2"><span>Step 2</span><strong>Meditatio</strong><span>Thinking</span></div>
+      <div class="step-pill" id="pill-3"><span>Step 3</span><strong>Oratio</strong><span>Prayer</span></div>
+      <div class="step-pill" id="pill-4"><span>Step 4</span><strong>Contemplatio</strong><span>Rest in God</span></div>
+      <div class="step-pill" id="pill-5"><span>Step 5</span><strong>Resolution</strong><span>Action</span></div>
+    </div>
+
+    <div class="room-card" id="room-container"></div>
+  </div>
+
+  <script>
+    const passages = [
+      {
+        ref: "1 John 4:7–11",
+        theme: "God Is Love",
+        text: "Beloved, let us love one another, because love is of God; everyone who loves is begotten by God and knows God. Whoever is without love does not know God, for God is love. Beloved, if God so loved us, we also must love one another.",
+        meditations: [
+          "I picture myself showing patience and kindness to someone who feels left out.",
+          "I feel grateful knowing that God loved me first before I ever earned it.",
+          "I remember a time when someone's love helped me through a difficult day."
+        ],
+        prayers: [
+          "Lord, thank You for loving me unconditionally. Teach me to share Your love with others.",
+          "Jesus, soften my heart where I hold onto anger so Your love can shine through me.",
+          "Holy Spirit, open my eyes today to notice someone who needs encouragement."
+        ],
+        resolutions: [
+          "Speak a kind, encouraging word to a classmate or family member today.",
+          "Pray a silent prayer of blessing for someone I find difficult to get along with.",
+          "Help with a chore or task at home without being asked."
+        ]
+      },
+      {
+        ref: "Romans 12:9–12, 21",
+        theme: "Conquer Evil with Good",
+        text: "Let love be sincere; hate what is evil, hold on to what is good; love one another with mutual affection; anticipate one another in showing honor. Rejoice in hope, endure in affliction, persevere in prayer. Do not be conquered by evil but conquer evil with good.",
+        meditations: [
+          "I imagine responding to negativity with calm strength instead of arguing back.",
+          "I notice the call to 'persevere in prayer' even when life feels busy or challenging.",
+          "I think about how small acts of honor and respect can change the mood in a room."
+        ],
+        prayers: [
+          "Lord, give me the courage to overcome evil with good rather than seeking payback.",
+          "Father, help my love for others to be genuine and free from selfishness.",
+          "Jesus, strengthen my hope when I face challenges or disappointments."
+        ],
+        resolutions: [
+          "Refuse to join in gossip or negative talk today and steer the conversation toward good.",
+          "Take five quiet minutes tonight to persevere in prayer for my family and school.",
+          "Show genuine respect and gratitude to a teacher, coach, or parent today."
+        ]
+      },
+      {
+        ref: "Colossians 3:12–15",
+        theme: "Put On Love",
+        text: "Put on then, as God's chosen ones, holy and beloved, heartfelt compassion, kindness, humility, gentleness, and patience, bearing with one another and forgiving one another. And over all these put on love, that is, the bond of perfection. And let the peace of Christ control your hearts.",
+        meditations: [
+          "I picture 'putting on' kindness and patience like a coat before starting my day.",
+          "I feel comforted realizing that God calls me 'holy and beloved.'",
+          "I reflect on a situation where letting Christ's peace rule my heart would calm my worry."
+        ],
+        prayers: [
+          "Christ Jesus, let Your peace rule my heart today whenever I feel anxious or rushed.",
+          "Lord, clothe me in humility, gentleness, and patience toward everyone I meet.",
+          "Merciful Father, help me forgive others just as You have forgiven me."
+        ],
+        resolutions: [
+          "Pause and take a deep breath before reacting when I feel frustrated today.",
+          "Let go of a grudge and forgive someone who hurt my feelings.",
+          "Practice patience by listening attentively when someone is speaking to me."
+        ]
+      }
+    ];
+    let currentPassage = null, currentStage = 0;
+    let chosenWord = "", chosenMeditation = "", chosenPrayer = "", chosenResolution = "";
+    let breathTimer = null;
+
+    function updateStepper() {
+      for (let i = 1; i <= 5; i++) {
+        const pill = document.getElementById(`pill-${i}`);
+        pill.classList.remove('active', 'done');
+        if (i < currentStage) pill.classList.add('done');
+        if (i === currentStage) pill.classList.add('active');
+      }
+    }
+
+    function renderSelectPassage() {
+      currentStage = 0;
+      updateStepper();
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Begin Your Sacred Reading</span>
+        <h2 class="room-title">Choose a Scripture Passage</h2>
+        <p class="room-desc">Select one of the New Testament passages from Chapter 9 to begin your five-step journey of <em>Lectio Divina</em>.</p>
+        <div class="passage-grid">
+          ${passages.map((p, idx) => `
+            <button class="passage-btn" onclick="startJourney(${idx})">
+              <h4>${p.ref}</h4>
+              <span>Theme: "${p.theme}"</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function startJourney(idx) {
+      currentPassage = passages[idx];
+      chosenWord = ""; chosenMeditation = ""; chosenPrayer = ""; chosenResolution = "";
+      renderStage1();
+    }
+
+    function renderStage1() {
+      currentStage = 1; updateStepper();
+      const words = currentPassage.text.split(' ');
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Step 1 of 5 • Lectio (Reading)</span>
+        <h2 class="room-title">Read Slowly &amp; Listen (${currentPassage.ref})</h2>
+        <p class="room-desc">Read the passage attentively. Click on a word or phrase that catches your attention to savor it.</p>
+        <div class="scripture-box">
+          ${words.map((w, i) => `<span class="word-token" id="w-${i}" onclick="pickWord(${i}, '${w.replace(/'/g, "\\'")}')">${w}</span>`).join(' ')}
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span id="word-status" style="font-weight:600; color:#0f766e;">Click any word above to highlight it</span>
+          <button class="action-btn" id="btn-s1" disabled onclick="renderStage2()">Continue to Meditatio →</button>
+        </div>
+      `;
+    }
+
+    function pickWord(idx, rawWord) {
+      document.querySelectorAll('.word-token').forEach(el => el.classList.remove('selected'));
+      document.getElementById(`w-${idx}`).classList.add('selected');
+      chosenWord = rawWord.replace(/[.,;:"!?]/g, '');
+      document.getElementById('word-status').textContent = `Selected word: "${chosenWord}"`;
+      document.getElementById('btn-s1').disabled = false;
+    }
+
+    function renderStage2() {
+      currentStage = 2; updateStepper();
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Step 2 of 5 • Meditatio (Thinking)</span>
+        <h2 class="room-title">Savor &amp; Reflect on "${chosenWord}"</h2>
+        <p class="room-desc">Notice what images, emotions, or memories arise as you think about this passage. Which reflection resonates most with you?</p>
+        <div class="choice-list">
+          ${currentPassage.meditations.map((m, i) => `
+            <button class="choice-btn" id="med-${i}" onclick="pickChoice('med', ${i})">${m}</button>
+          `).join('')}
+        </div>
+        <button class="action-btn" id="btn-s2" disabled onclick="renderStage3()">Continue to Oratio →</button>
+      `;
+    }
+
+    function renderStage3() {
+      currentStage = 3; updateStepper();
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Step 3 of 5 • Oratio (Prayer)</span>
+        <h2 class="room-title">Speak to God as a Friend</h2>
+        <p class="room-desc">Respond to what God is saying to you through ${currentPassage.ref}. Choose a prayer response to offer from your heart:</p>
+        <div class="choice-list">
+          ${currentPassage.prayers.map((pr, i) => `
+            <button class="choice-btn" id="pray-${i}" onclick="pickChoice('pray', ${i})">${pr}</button>
+          `).join('')}
+        </div>
+        <button class="action-btn" id="btn-s3" disabled onclick="renderStage4()">Continue to Contemplatio →</button>
+      `;
+    }
+
+    function pickChoice(type, idx) {
+      document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('picked'));
+      document.getElementById(`${type}-${idx}`).classList.add('picked');
+      if (type === 'med') { chosenMeditation = currentPassage.meditations[idx]; document.getElementById('btn-s2').disabled = false; }
+      if (type === 'pray') { chosenPrayer = currentPassage.prayers[idx]; document.getElementById('btn-s3').disabled = false; }
+      if (type === 'res') { chosenResolution = currentPassage.resolutions[idx]; document.getElementById('btn-s5').disabled = false; }
+    }
+
+    function renderStage4() {
+      currentStage = 4; updateStepper();
+      let secondsLeft = 10;
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Step 4 of 5 • Contemplatio (Contemplation)</span>
+        <h2 class="room-title">Rest Quietly in God's Presence</h2>
+        <p class="room-desc">There is no need to analyze or rush. Imagine Jesus looking at you with great love as you breathe slowly.</p>
+        <div class="stillness-zone">
+          <div class="breath-orb" id="orb-text">Breathe</div>
+          <p id="still-countdown" style="font-weight:bold; color:#065f46;">Resting in stillness... (${secondsLeft}s)</p>
+        </div>
+        <button class="action-btn" id="btn-s4" disabled onclick="renderStage5()">Continue to Resolution →</button>
+      `;
+      if (breathTimer) clearInterval(breathTimer);
+      breathTimer = setInterval(() => {
+        secondsLeft--;
+        const cd = document.getElementById('still-countdown');
+        if (!cd) { clearInterval(breathTimer); return; }
+        if (secondsLeft > 0) {
+          cd.textContent = `Resting in stillness... (${secondsLeft}s)`;
+        } else {
+          clearInterval(breathTimer);
+          cd.textContent = "Peace be with you. Ready for your final step.";
+          document.getElementById('orb-text').textContent = "Peace";
+          document.getElementById('btn-s4').disabled = false;
+        }
+      }, 1000);
+    }
+
+    function renderStage5() {
+      currentStage = 5; updateStepper();
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Step 5 of 5 • Resolution</span>
+        <h2 class="room-title">Live Out God's Word Today</h2>
+        <p class="room-desc">Take an insight from your sacred reading and choose one concrete way to apply it in your daily life:</p>
+        <div class="choice-list">
+          ${currentPassage.resolutions.map((r, i) => `
+            <button class="choice-btn" id="res-${i}" onclick="pickChoice('res', ${i})">${r}</button>
+          `).join('')}
+        </div>
+        <button class="action-btn" id="btn-s5" disabled onclick="renderSummary()">Complete Sacred Reading</button>
+      `;
+    }
+
+    function renderSummary() {
+      currentStage = 6; updateStepper();
+      const container = document.getElementById('room-container');
+      container.innerHTML = `
+        <span class="room-tag">Lectio Divina Complete</span>
+        <h2 class="room-title">Your Sacred Reading Reflection Card</h2>
+        <div class="summary-box">
+          <p><strong>Scripture Passage:</strong> ${currentPassage.ref} ("${currentPassage.theme}")</p>
+          <p><strong>1. Word That Stood Out (Lectio):</strong> "${chosenWord}"</p>
+          <p><strong>2. Reflection (Meditatio):</strong> ${chosenMeditation}</p>
+          <p><strong>3. Heartfelt Prayer (Oratio):</strong> "${chosenPrayer}"</p>
+          <p><strong>4. Today's Resolution:</strong> ${chosenResolution}</p>
+        </div>
+        <button class="action-btn" onclick="renderSelectPassage()">Pray Another Passage</button>
+      `;
+    }
+
+    window.addEventListener('load', renderSelectPassage);
+  </script>
+</body>
+</html>

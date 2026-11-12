@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voices of the Psalms - Forms of Prayer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #7c2d12 0%, #9a3412 45%, #431407 100%);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 24px; color: #fffbeb;
+    }
+    .header { text-align: center; margin-bottom: 16px; max-width: 820px; animation: fadeDown 0.7s ease; }
+    .header h1 {
+      font-size: 2.2rem; color: #fde047; margin-bottom: 6px;
+      text-shadow: 0 2px 12px rgba(253, 224, 71, 0.35);
+    }
+    .header p { font-size: 1rem; color: #fed7aa; }
+    .stats-bar {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 24px;
+      margin-bottom: 20px; background: rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 12px 28px; border-radius: 30px; font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+    .attempt-dots { display: inline-flex; gap: 6px; vertical-align: middle; margin-left: 6px; }
+    .dot {
+      width: 14px; height: 14px; border-radius: 50%; background: #fde047;
+      box-shadow: 0 0 8px #fde047; transition: all 0.3s ease;
+    }
+    .dot.used { background: #78350f; box-shadow: none; transform: scale(0.8); }
+    .game-wrapper { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 920px; }
+    /* Scroll / Verse Stage Card */
+    .scroll-card {
+      background: rgba(255, 251, 235, 0.98); border-radius: 24px;
+      padding: 28px; border: 3px solid #f59e0b; color: #1c1917;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+    }
+    .card-enter { animation: slideUpFade 0.45s ease forwards; }
+    .top-meta {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+    }
+    .verse-badge {
+      background: #fef3c7; color: #92400e; padding: 6px 16px;
+      border-radius: 20px; font-size: 0.85rem; font-weight: 700;
+    }
+    .source-tag {
+      background: #ffedd5; color: #9a3412; padding: 6px 14px;
+      border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+    }
+    .verse-box {
+      background: linear-gradient(to right, #fff7ed, #ffedd5);
+      border-left: 5px solid #ea580c; padding: 20px 22px; border-radius: 12px;
+      margin-bottom: 18px; font-size: 1.15rem; line-height: 1.6;
+      color: #292524; font-style: italic;
+    }
+    .feedback-banner {
+      padding: 12px 16px; border-radius: 12px; margin-bottom: 18px;
+      font-weight: 600; font-size: 0.95rem; text-align: center; display: none;
+    }
+    .feedback-banner.error { display: block; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; animation: shake 0.35s ease; }
+    .feedback-banner.warn { display: block; background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+    .feedback-banner.success { display: block; background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    /* 6 Forms of Prayer Buckets */
+    .buckets-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 14px;
+    }
+    .bucket-btn {
+      background: #ffffff; border: 2px solid #fdba74; border-radius: 16px;
+      padding: 16px; text-align: left; cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex; flex-direction: column; gap: 5px;
+      box-shadow: 0 4px 10px rgba(154, 52, 18, 0.08);
+    }
+    .bucket-btn:hover:not(:disabled) {
+      background: #fff7ed; border-color: #ea580c; transform: translateY(-3px);
+      box-shadow: 0 8px 18px rgba(234, 88, 12, 0.2);
+    }
+    .bucket-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .bucket-title { font-size: 1.05rem; font-weight: 800; color: #9a3412; }
+    .bucket-hint { font-size: 0.82rem; color: #57534e; line-height: 1.35; }
+    /* End Summary Card */
+    .end-card { display: none; text-align: center; padding: 10px; animation: slideUpFade 0.6s ease; }
+    .end-card.show { display: block; }
+    .end-card h2 { color: #7c2d12; font-size: 1.85rem; margin-bottom: 8px; }
+    .guide-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px; text-align: left; margin: 16px 0;
+    }
+    .guide-item {
+      background: #fff7ed; border-left: 4px solid #ea580c;
+      padding: 10px 12px; border-radius: 8px; font-size: 0.86rem; color: #292524;
+    }
+    .reset-btn {
+      background: linear-gradient(135deg, #ea580c, #9a3412); color: white; border: none;
+      padding: 13px 30px; font-size: 1rem; border-radius: 25px; cursor: pointer;
+      font-weight: bold; margin-top: 10px; box-shadow: 0 6px 15px rgba(154, 52, 18, 0.3);
+    }
+    .reset-btn:hover { transform: scale(1.04); }
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Voices of the Psalms</h1>
+    <p>Read each Scripture prayer from Chapter 9 and sort it into the correct <strong>Form of Prayer</strong>.</p>
+  </div>
+
+  <div class="stats-bar">
+    <span>Score: <span id="score-el">0</span> pts</span>
+    <span>Scrolls Sorted: <span id="progress-el">0</span> / 8</span>
+    <span>Attempts Left: <span class="attempt-dots" id="dots-el"></span></span>
+  </div>
+
+  <div class="game-wrapper">
+    <div class="scroll-card">
+      <div id="active-view" class="card-enter">
+        <div class="top-meta">
+          <span class="verse-badge" id="step-badge">Scroll 1 of 8</span>
+          <span class="source-tag" id="source-tag">Psalm 100:4</span>
+        </div>
+        <div class="verse-box" id="verse-text"></div>
+        <div class="feedback-banner" id="feedback-box"></div>
+        <div class="buckets-grid" id="buckets-grid"></div>
+      </div>
+
+      <div class="end-card" id="end-card">
+        <h2>All Scrolls Categorized!</h2>
+        <p id="final-stats" style="font-weight:bold; font-size:1.1rem; color:#9a3412; margin-bottom:8px;"></p>
+        <p style="font-size:0.92rem; color:#57534e;">Quick Reference Guide from Chapter 9 (pp. 323–324):</p>
+        <div class="guide-grid" id="guide-grid"></div>
+        <button class="reset-btn" onclick="startGame()">Sort Another Set of Scrolls</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const prayerForms = [
+      { name: "Blessing", hint: "Responding to God's gifts by offering yourself and asking His grace." },
+      { name: "Adoration", hint: "Humbly acknowledging God as Creator and yourself as His creation." },
+      { name: "Petition", hint: "Asking God for material or spiritual needs, including contrition for sin." },
+      { name: "Intercession", hint: "Praying not for yourself, but on behalf of others—even enemies." },
+      { name: "Thanksgiving", hint: "Thanking God for the gifts of life, friends, health, and salvation." },
+      { name: "Praise", hint: "Selflessly glorifying God simply for who He is, not just what He does." }
+    ];
+
+    const prayerScrolls = [
+      {
+        source: "Psalm 95:6",
+        verse: "\"Come, let us bow down in worship; let us kneel before the LORD who made us.\"",
+        form: "Adoration",
+        explanation: "Adoration humbly acknowledges that God is the loving Creator of everything and we are His creation."
+      },
+      {
+        source: "Luke 18:13 (The Tax Collector)",
+        verse: "\"O God, be merciful to me a sinner.\"",
+        form: "Petition",
+        explanation: "Contrition is a special type of petition in which we ask our merciful Father to forgive our sins."
+      },
+      {
+        source: "John 11:41 (Jesus at Lazarus's Tomb)",
+        verse: "\"Father, I thank you for hearing me. I know that you always hear me.\"",
+        form: "Thanksgiving",
+        explanation: "Jesus modeled thanksgiving out loud before raising Lazarus, reminding us every moment is a gift."
+      },
+      {
+        source: "Psalm 150:1–2, 6",
+        verse: "\"Praise the LORD in his sanctuary... Let everything that has breath praise the LORD!\"",
+        form: "Praise",
+        explanation: "Praise selflessly glorifies God simply for who He is and for His greatness."
+      },
+      {
+        source: "Exodus 32:11–13 (Moses for Israel)",
+        verse: "\"LORD, why should your wrath blaze up against your own people... Remember your servants Abraham, Isaac, and Israel.\"",
+        form: "Intercession",
+        explanation: "Moses acted as a mediator and interceded on behalf of the Chosen People rather than for his own interests."
+      },
+      {
+        source: "Psalm 103:1–2",
+        verse: "\"Bless the LORD, O my soul; and all my being, bless his holy name. Bless the LORD, O my soul, and forget not all his benefits.\"",
+        form: "Blessing",
+        explanation: "Because God first blessed us with many gifts, we bless God in return by praising Him and offering ourselves."
+      },
+      {
+        source: "1 Kings 18:37 (Elijah on Mount Carmel)",
+        verse: "\"Answer me, LORD! Answer me, that this people may know that you, LORD, are God.\"",
+        form: "Petition",
+        explanation: "In petition or supplication, we earnestly ask God to act and provide what is needed."
+      },
+      {
+        source: "Luke 23:34 (Jesus on the Cross)",
+        verse: "\"Father, forgive them, they know not what they do.\"",
+        form: "Intercession",
+        explanation: "Praying for those who cause us harm or whom we count as enemies is the highest example of intercessory mercy."
+      }
+    ];
+    let deck = [], currentIdx = 0, wrongThisCard = [];
+    let score = 0, attemptsLeft = 2, locked = false;
+
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function startGame() {
+      deck = shuffle(prayerScrolls);
+      currentIdx = 0; score = 0; locked = false;
+      document.getElementById('active-view').style.display = 'block';
+      document.getElementById('end-card').classList.remove('show');
+      loadScroll();
+    }
+
+    function renderDots() {
+      const el = document.getElementById('dots-el');
+      el.innerHTML = '';
+      for (let i = 0; i < 2; i++) {
+        const span = document.createElement('span');
+        span.className = 'dot' + (i >= attemptsLeft ? ' used' : '');
+        el.appendChild(span);
+      }
+    }
+
+    function renderBuckets() {
+      const grid = document.getElementById('buckets-grid');
+      grid.innerHTML = '';
+      prayerForms.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'bucket-btn';
+        btn.disabled = wrongThisCard.includes(f.name) || locked;
+        btn.innerHTML = `<span class="bucket-title">${f.name}</span><span class="bucket-hint">${f.hint}</span>`;
+        btn.onclick = () => checkChoice(f.name);
+        grid.appendChild(btn);
+      });
+    }
+
+    function loadScroll() {
+      locked = false;
+      wrongThisCard = [];
+      attemptsLeft = 2;
+
+      const view = document.getElementById('active-view');
+      view.classList.remove('card-enter');
+      void view.offsetWidth;
+      view.classList.add('card-enter');
+
+      const item = deck[currentIdx];
+      document.getElementById('step-badge').textContent = `Scroll ${currentIdx + 1} of ${deck.length}`;
+      document.getElementById('source-tag').textContent = item.source;
+      document.getElementById('verse-text').textContent = item.verse;
+      document.getElementById('feedback-box').style.display = 'none';
+
+      renderBuckets();
+      updateStats();
+    }
+
+    function checkChoice(chosenForm) {
+      if (locked) return;
+      const item = deck[currentIdx];
+      const fb = document.getElementById('feedback-box');
+
+      if (chosenForm === item.form) {
+        locked = true;
+        const pts = attemptsLeft === 2 ? 15 : 10;
+        score += pts;
+        fb.className = 'feedback-banner success';
+        fb.textContent = `Correct (${item.form})! ${item.explanation} (+${pts} pts)`;
+        fb.style.display = 'block';
+        renderBuckets(); updateStats();
+        nextTurn(2000);
+      } else {
+        attemptsLeft--;
+        wrongThisCard.push(chosenForm);
+        updateStats();
+
+        if (attemptsLeft > 0) {
+          fb.className = 'feedback-banner error';
+          fb.textContent = `Not quite ${chosenForm}. Read the verse closely — 1 attempt left!`;
+          fb.style.display = 'block';
+          renderBuckets();
+        } else {
+          locked = true;
+          fb.className = 'feedback-banner warn';
+          fb.textContent = `Out of attempts! That is ${item.form}: ${item.explanation}`;
+          fb.style.display = 'block';
+          renderBuckets();
+          nextTurn(2600);
+        }
+      }
+    }
+
+    function nextTurn(delay) {
+      currentIdx++;
+      if (currentIdx < deck.length) {
+        setTimeout(loadScroll, delay);
+      } else {
+        setTimeout(showSummary, delay);
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('score-el').textContent = score;
+      document.getElementById('progress-el').textContent = currentIdx;
+      renderDots();
+    }
+
+    function showSummary() {
+      document.getElementById('progress-el').textContent = deck.length;
+      document.getElementById('active-view').style.display = 'none';
+      document.getElementById('final-stats').textContent =
+        `Final Score: ${score} out of ${deck.length * 15} points`;
+
+      const guide = document.getElementById('guide-grid');
+      guide.innerHTML = prayerForms.map(f =>
+        `<div class="guide-item"><strong>${f.name}:</strong> ${f.hint}</div>`
+      ).join('');
+
+      document.getElementById('end-card').classList.add('show');
+    }
+
+    window.addEventListener('load', startGame);
+  </script>
+</body>
+</html>

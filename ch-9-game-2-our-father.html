@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path of the Disciple - Mindful Prayer Journey</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #2e1065 0%, #4c1d95 45%, #1e1b4b 100%);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 24px; color: #f8fafc;
+    }
+    .header { text-align: center; margin-bottom: 16px; max-width: 820px; animation: fadeDown 0.7s ease; }
+    .header h1 {
+      font-size: 2.2rem; color: #fde047; margin-bottom: 6px;
+      text-shadow: 0 2px 12px rgba(253, 224, 71, 0.35);
+    }
+    .header p { font-size: 1rem; color: #e2e8f0; }
+    .stats-bar {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 24px;
+      margin-bottom: 20px; background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 12px 28px; border-radius: 30px; font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+    .attempt-dots { display: inline-flex; gap: 6px; vertical-align: middle; margin-left: 6px; }
+    .dot {
+      width: 14px; height: 14px; border-radius: 50%; background: #4ade80;
+      box-shadow: 0 0 8px #4ade80; transition: all 0.3s ease;
+    }
+    .dot.used { background: #475569; box-shadow: none; transform: scale(0.8); }
+    .game-wrapper { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 940px; }
+    .path-board {
+      background: rgba(255, 255, 255, 0.95); border-radius: 22px;
+      padding: 20px; border: 3px solid #c084fc; color: #1e1b4b;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+    .path-labels {
+      display: flex; justify-content: space-between; font-size: 0.82rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
+    }
+    .label-god { color: #be185d; }
+    .label-world { color: #1d4ed8; }
+    .stones-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+    .stone {
+      background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 16px;
+      padding: 12px 6px; text-align: center; font-size: 0.78rem;
+      font-weight: 600; color: #475569; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .stone-num {
+      width: 26px; height: 26px; border-radius: 50%; background: #94a3b8;
+      color: white; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.82rem; transition: background 0.4s ease;
+    }
+    .stone.lit-god {
+      background: linear-gradient(135deg, #fdf2f8, #fbcfe8);
+      border-color: #db2777; color: #831843; transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 8px 18px rgba(219, 39, 119, 0.35);
+    }
+    .stone.lit-god .stone-num { background: #db2777; }
+    .stone.lit-world {
+      background: linear-gradient(135deg, #eff6ff, #bfdbfe);
+      border-color: #2563eb; color: #1e3a8a; transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+    }
+    .stone.lit-world .stone-num { background: #2563eb; }
+    .play-area {
+      background: rgba(255, 255, 255, 0.97); border-radius: 24px;
+      padding: 28px; border: 3px solid #a855f7; color: #1e1b4b;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+    .card-enter { animation: slideUpFade 0.45s ease forwards; }
+    .scenario-header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+    }
+    .scenario-badge {
+      background: #f3e8ff; color: #6b21a8; padding: 6px 16px;
+      border-radius: 20px; font-size: 0.85rem; font-weight: 700;
+    }
+    .rule-badge {
+      background: #fef3c7; color: #92400e; padding: 6px 14px;
+      border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+    }
+    .scenario-box {
+      background: linear-gradient(to right, #fffbeb, #fef3c7);
+      border-left: 5px solid #f59e0b; padding: 18px 20px; border-radius: 12px;
+      margin-bottom: 18px; font-size: 1.1rem; line-height: 1.55; color: #1f2937;
+    }
+    .feedback-banner {
+      padding: 12px 16px; border-radius: 12px; margin-bottom: 16px;
+      font-weight: 600; font-size: 0.95rem; text-align: center; display: none;
+    }
+    .feedback-banner.error { display: block; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; animation: shake 0.35s ease; }
+    .feedback-banner.warn { display: block; background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+    .feedback-banner.success { display: block; background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .option-btn {
+      background: #faf5ff; border: 2px solid #d8b4fe; border-radius: 14px;
+      padding: 14px 16px; text-align: left; font-size: 0.95rem;
+      font-weight: 600; color: #4c1d95; cursor: pointer;
+      transition: all 0.22s ease; display: flex; align-items: center; gap: 10px;
+    }
+    .option-btn:hover:not(:disabled) {
+      background: #f3e8ff; border-color: #9333ea; transform: translateY(-2px);
+      box-shadow: 0 5px 12px rgba(147, 51, 234, 0.18);
+    }
+    .option-btn:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+    .end-card { display: none; text-align: center; padding: 15px; animation: slideUpFade 0.6s ease; }
+    .end-card.show { display: block; }
+    .end-card h2 { color: #581c87; font-size: 1.85rem; margin-bottom: 10px; }
+    .quote-card {
+      background: #faf5ff; border-left: 5px solid #9333ea; padding: 18px;
+      border-radius: 12px; margin: 16px auto; max-width: 660px;
+      text-align: left; font-style: italic; color: #3b0764; line-height: 1.5;
+    }
+    .reset-btn {
+      background: linear-gradient(135deg, #9333ea, #6b21a8); color: white; border: none;
+      padding: 13px 30px; font-size: 1rem; border-radius: 25px; cursor: pointer;
+      font-weight: bold; margin-top: 12px; box-shadow: 0 6px 15px rgba(107, 33, 168, 0.3);
+    }
+    .reset-btn:hover { transform: scale(1.04); }
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+    @media (max-width: 720px) { .stones-row { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Path of the Disciple</h1>
+    <p>Reflect carefully and match each real-life situation to its petition in the <strong>Our Father</strong>.</p>
+  </div>
+
+  <div class="stats-bar">
+    <span>Score: <span id="score-el">0</span> pts</span>
+    <span>Petitions Lit: <span id="progress-el">0</span> / 7</span>
+    <span>Attempts Left: <span class="attempt-dots" id="dots-el"></span></span>
+  </div>
+
+  <div class="game-wrapper">
+    <div class="path-board">
+      <div class="path-labels">
+        <span class="label-god">1–3: Glorifying God</span>
+        <span class="label-world">4–7: Concerns for the World</span>
+      </div>
+      <div class="stones-row" id="stones-row"></div>
+    </div>
+
+    <div class="play-area" id="play-area">
+      <div id="active-question-view" class="card-enter">
+        <div class="scenario-header">
+          <span class="scenario-badge" id="step-badge">Situation 1 of 7</span>
+          <span class="rule-badge" id="rule-badge">Warm-up Round: 3 Attempts Allowed</span>
+        </div>
+        <div class="scenario-box" id="scenario-text"></div>
+        <div class="feedback-banner" id="feedback-box"></div>
+        <div class="options-grid" id="options-grid"></div>
+      </div>
+
+      <div class="end-card" id="end-card">
+        <h2>Journey Complete!</h2>
+        <p id="final-stats-text" style="font-weight:bold; font-size:1.1rem; color:#6b21a8; margin-bottom:10px;"></p>
+        <div class="quote-card">
+          "The Lord's Prayer is truly the summary of the whole Gospel. The first three petitions glorify God's name, Kingdom, and will, while the last four entrust all our human needs to our loving Father."
+          <div style="text-align:right; font-weight:bold; font-style:normal; margin-top:8px;">
+            — Tertullian &amp; Chapter 9 (pp. 337–339)
+          </div>
+        </div>
+        <button class="reset-btn" onclick="startGame()">Walk the Path Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const petitionsData = [
+      {
+        id: 1, category: "god", petition: "Hallowed be thy name",
+        scenario: "You strive to live honestly and imitate Jesus so that your actions reflect God's holiness to everyone around you."
+      },
+      {
+        id: 2, category: "god", petition: "Thy kingdom come",
+        scenario: "You work for peace, justice, and service in your school and parish while awaiting Christ's return at the end of time."
+      },
+      {
+        id: 3, category: "god", petition: "Thy will be done on earth as it is in heaven",
+        scenario: "You ask the Holy Spirit to help you overcome selfishness so you can love God above all and your neighbor as yourself."
+      },
+      {
+        id: 4, category: "world", petition: "Give us this day our daily bread",
+        scenario: "You thank God for food, shelter, and friendship, and remember to share your material blessings with those who are hungry and poor."
+      },
+      {
+        id: 5, category: "world", petition: "And forgive us our trespasses, as we forgive those who trespass against us",
+        scenario: "A classmate spreads an unfair rumor about you, and instead of seeking revenge, you choose to let go of anger and forgive them."
+      },
+      {
+        id: 6, category: "world", petition: "And lead us not into temptation",
+        scenario: "You are facing peer pressure to make a poor choice, so you pray for fortitude and watchfulness to stay faithful to Christ."
+      },
+      {
+        id: 7, category: "world", petition: "But deliver us from evil",
+        scenario: "You pray for protection from illness, violence, and Satan's snares, trusting in the victory Christ has already won."
+      }
+    ];
+    let shuffledScenarios = [], currentIdx = 0, solvedIds = [], wrongGuessesThisTurn = [];
+    let score = 0, maxAttempts = 3, attemptsLeft = 3, isTransitioning = false;
+
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function startGame() {
+      shuffledScenarios = shuffle(petitionsData);
+      currentIdx = 0; solvedIds = []; score = 0; isTransitioning = false;
+      document.getElementById('active-question-view').style.display = 'block';
+      document.getElementById('end-card').classList.remove('show');
+      renderStones();
+      loadScenario();
+    }
+
+    function renderStones() {
+      const row = document.getElementById('stones-row');
+      row.innerHTML = '';
+      petitionsData.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'stone';
+        if (solvedIds.includes(p.id)) {
+          div.classList.add(p.category === 'god' ? 'lit-god' : 'lit-world');
+        }
+        div.innerHTML = `<span class="stone-num">${p.id}</span><span>${p.petition}</span>`;
+        row.appendChild(div);
+      });
+    }
+
+    function renderOptions() {
+      const grid = document.getElementById('options-grid');
+      grid.innerHTML = '';
+      petitionsData.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.disabled = solvedIds.includes(p.id) || wrongGuessesThisTurn.includes(p.id) || isTransitioning;
+        btn.innerHTML = `<strong>${p.id}.</strong> <span>${p.petition}</span>`;
+        btn.onclick = () => checkAnswer(p.id);
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderDots() {
+      const dotsEl = document.getElementById('dots-el');
+      dotsEl.innerHTML = '';
+      for (let i = 0; i < maxAttempts; i++) {
+        const span = document.createElement('span');
+        span.className = 'dot' + (i >= attemptsLeft ? ' used' : '');
+        dotsEl.appendChild(span);
+      }
+    }
+
+    function loadScenario() {
+      isTransitioning = false;
+      wrongGuessesThisTurn = [];
+      // 3 attempts for Situation 1 & 2 (index 0 & 1), 2 attempts after
+      maxAttempts = currentIdx < 2 ? 3 : 2;
+      attemptsLeft = maxAttempts;
+
+      const view = document.getElementById('active-question-view');
+      view.classList.remove('card-enter');
+      void view.offsetWidth;
+      view.classList.add('card-enter');
+
+      const current = shuffledScenarios[currentIdx];
+      document.getElementById('step-badge').textContent = `Situation ${currentIdx + 1} of 7`;
+      document.getElementById('rule-badge').textContent =
+        currentIdx < 2 ? 'Warm-up: 3 Attempts Allowed' : 'Focus Mode: 2 Attempts Allowed';
+      document.getElementById('scenario-text').textContent = current.scenario;
+      document.getElementById('feedback-box').style.display = 'none';
+
+      renderOptions();
+      updateHeader();
+    }
+
+    function checkAnswer(selectedId) {
+      if (isTransitioning) return;
+      const current = shuffledScenarios[currentIdx];
+      const fb = document.getElementById('feedback-box');
+
+      if (selectedId === current.id) {
+        isTransitioning = true;
+        const bonus = attemptsLeft === maxAttempts ? 15 : 10;
+        score += bonus;
+        solvedIds.push(current.id);
+        fb.className = 'feedback-banner success';
+        fb.textContent = `Thoughtful choice! Petition #${current.id} illuminated (+${bonus} pts).`;
+        fb.style.display = 'block';
+        renderStones(); renderOptions(); updateHeader();
+        advanceTurn(1100);
+      } else {
+        attemptsLeft--;
+        wrongGuessesThisTurn.push(selectedId);
+        updateHeader();
+
+        if (attemptsLeft > 0) {
+          fb.className = 'feedback-banner error';
+          fb.textContent = `Not quite. Pause and re-read carefully — ${attemptsLeft} attempt${attemptsLeft > 1 ? 's' : ''} left!`;
+          fb.style.display = 'block';
+          renderOptions();
+        } else {
+          isTransitioning = true;
+          solvedIds.push(current.id);
+          fb.className = 'feedback-banner warn';
+          fb.textContent = `Out of attempts! The matching petition was #${current.id}: "${current.petition}".`;
+          fb.style.display = 'block';
+          renderStones(); renderOptions(); updateHeader();
+          advanceTurn(2200);
+        }
+      }
+    }
+
+    function advanceTurn(delay) {
+      currentIdx++;
+      if (currentIdx < shuffledScenarios.length) {
+        setTimeout(loadScenario, delay);
+      } else {
+        setTimeout(finishGame, delay);
+      }
+    }
+
+    function updateHeader() {
+      document.getElementById('score-el').textContent = score;
+      document.getElementById('progress-el').textContent = solvedIds.length;
+      renderDots();
+    }
+
+    function finishGame() {
+      document.getElementById('active-question-view').style.display = 'none';
+      document.getElementById('final-stats-text').textContent =
+        `Final Reflection Score: ${score} out of 105 points`;
+      document.getElementById('end-card').classList.add('show');
+    }
+
+    window.addEventListener('load', startGame);
+  </script>
+</body>
+</html>
