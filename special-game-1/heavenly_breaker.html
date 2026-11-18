@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Heavenly Breaker: Divine Light</title>
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0;height:100%;background:#04050d;color:#fff;font-family:'Segoe UI',Tahoma,Verdana,sans-serif;user-select:none;-webkit-user-select:none}
+body{display:flex;align-items:center;justify-content:center}
+#wrap{width:min(800px,100vw)}
+#hud{display:flex;justify-content:space-between;gap:8px;padding:9px 16px;background:linear-gradient(#1a2048,#10163a);border:2px solid #ffd23f;border-bottom:0;border-radius:12px 12px 0 0;font-weight:700;font-size:15px;flex-wrap:wrap}
+#hud span{color:#ffd23f}#snd{cursor:pointer;color:#a8c0ff}
+#stage{position:relative;aspect-ratio:4/3;border:2px solid #ffd23f;box-shadow:0 0 40px rgba(255,210,63,.3);overflow:hidden}
+canvas{width:100%;height:100%;display:block;touch-action:none}
+#overlay,#pray{position:absolute;inset:0;background:rgba(5,7,18,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;box-sizing:border-box}
+h1{font-size:clamp(26px,6vw,44px);margin:0 0 6px;color:#ffd23f;text-shadow:0 0 22px #ffd23f;letter-spacing:2px}
+.sub{color:#a8c0ff;font-size:14px;max-width:560px;margin:0 0 12px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;text-align:left;background:rgba(255,255,255,.05);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,210,63,.3);margin-bottom:14px;font-size:12px;line-height:1.35}
+.li{display:flex;gap:8px;align-items:flex-start}
+.badge{padding:3px 6px;border-radius:5px;font-weight:800;font-size:11px;color:#000;min-width:54px;text-align:center}
+button{padding:12px 36px;font-size:18px;font-weight:800;color:#090a16;background:linear-gradient(45deg,#ffd23f,#ffaa00);border:0;border-radius:30px;cursor:pointer;box-shadow:0 0 20px rgba(255,210,63,.7);transition:transform .15s}
+button:hover{transform:scale(1.05)}
+.hint{margin-top:10px;font-size:12px;color:#8899cc}
+#pray{display:none;z-index:2}
+#given{color:#fff;font-style:italic;font-size:15px;max-width:560px;margin:0 0 10px;line-height:1.4}
+#ans{width:min(560px,92%);background:#0d1233;color:#fff;border:2px solid #ffd23f;border-radius:10px;padding:10px;font:15px Georgia,serif;resize:none;box-sizing:border-box}
+#msg{min-height:18px;color:#ff9db0}
+@media(max-width:560px){.legend{grid-template-columns:1fr;font-size:11px}}
+</style></head><body>
+<div id="wrap">
+<div id="hud">
+<div>Score: <span id="sc">0</span></div><div>Combo: <span id="cb">x1</span></div>
+<div>Level <span id="lv">1</span>: <span id="ln">The Cross</span></div><div>Lives: <span id="li">3</span></div>
+<div id="snd">Sound: ON</div></div>
+<div id="stage"><canvas id="c" width="800" height="600"></canvas>
+<div id="overlay"><h1>HEAVENLY BREAKER</h1>
+<p class="sub">Shatter the darkness with divine light. Break the sacred blocks to call down heavenly help. Powers appear at random, and more unlock as you climb the levels.</p>
+<div class="legend">
+<div class="li"><span class="badge" style="background:#ffd23f">POWER</span><span><b>God’s power.</b> 3 hits: the power of God descends and blasts every block.</span></div>
+<div class="li"><span class="badge" style="background:#ff4d6d;color:#fff">GRACE</span><span><b>God’s grace.</b> 2 hits: grace rains down and lifts half the blocks.</span></div>
+<div class="li"><span class="badge" style="background:#38bdf8">ROSARY</span><span><b>Mary’s protection.</b> A hidden blessing: looks like an ordinary block until you break it. Gives a 10-second shield plus 2 fast balls.</span></div>
+<div class="li"><span class="badge" style="background:#f1f5ff">ANGEL</span><span><b>Guardian angel.</b> Flies to the nearest block and smashes it.</span></div>
+<div class="li"><span class="badge" style="background:#34d399">FAITH</span><span><b>Armored block.</b> Takes 2 hits to break.</span></div>
+<div class="li"><span class="badge" style="background:#ff9a1f">SPIRIT</span><span><b>Blessings.</b> Blocks may drop Spirit Fire (piercing ball) or Light Beams (paddle lasers).</span></div>
+</div>
+<button id="startBtn">LAUNCH MISSION</button>
+<div class="hint">Move: mouse, touch or arrow keys · Launch / fire: click, tap or Space · M: sound</div></div>
+<div id="pray"><h1>ONE LAST CHANCE</h1><p class="sub" id="ask"></p><p id="given"></p><textarea id="ans" rows="3" placeholder="Type it here..."></textarea><div id="msg" class="hint"></div><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px"><button id="subBtn">SUBMIT</button><button id="giveBtn" style="background:#2a3160;color:#fff;box-shadow:none">GIVE UP</button></div></div></div></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d'),W=800,H=600,$=id=>document.getElementById(id);
+const scoreEl=$('sc'),comboEl=$('cb'),levelEl=$('lv'),nameEl=$('ln'),livesEl=$('li'),overlay=$('overlay'),startBtn=$('startBtn'),soundBtn=$('snd');
+const NAMES=["The Cross","12 Apostles","Armor of God","Walls of Jericho","Heavenly Gates"];
+const TYPES={power:{hp:3,c:'#ffd23f',l:'POWER'},grace:{hp:2,c:'#ff4d6d',l:'GRACE'},rosary:{hp:1,c:'#38bdf8',l:'ROSARY'},angel:{hp:1,c:'#f1f5ff',l:'ANGEL'},armor:{hp:2,c:'#34d399',l:'FAITH'}};
+let running=false,score=0,combo=1,level=1,lives=3,frame=0,rk=false,lk=false;
+let balls=[],bricks=[],parts=[],angels=[],drops=[],lasers=[],rings=[],beams=[],texts=[],later=[],banner=null,flash=null,shake=0;
+const paddle={w:120,bw:120,h:16,x:340,y:565,speed:9,shield:0,laser:0,cd:0};
+const stars=Array.from({length:90},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.4,s:Math.random()*.5+.1,p:Math.random()*6}));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+/* ---------- audio ---------- */
+let AC=null,muted=false;
+function tone(f,d,type='sine',v=.1,slide=0,delay=0){if(!AC||muted)return;const t=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d);}
+function noise(d,v=.2){if(!AC||muted)return;const n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),g=AC.createGain();s.buffer=b;g.gain.value=v;s.connect(g);g.connect(AC.destination);s.start();}
+const arp=(fs,d,type,v,gap)=>fs.forEach((f,i)=>tone(f,d,type,v,0,i*gap));
+const SFX={hit:()=>tone(480+rnd(0,120),.07,'triangle',.07),brk:()=>tone(700+rnd(0,300),.12,'square',.04,-300),pad:()=>tone(240,.08,'sine',.12,-60),
+power:()=>{noise(1.6,.28);tone(55,2,'sine',.35,-15);arp([196,294,392,588,784],1.4,'sawtooth',.05,.15);arp([523,659,784,1047],1,'triangle',.08,.12);},
+grace:()=>arp([523,659,784,988,1319],.9,'sine',.09,.1),rosary:()=>arp([392,494,587,784],.6,'triangle',.09,.12),
+angel:()=>arp([880,1109,1319,1760],.5,'sine',.07,.08),laser:()=>tone(1200,.1,'square',.03,-800),
+pick:()=>{tone(660,.1,'triangle',.1);tone(990,.15,'triangle',.1,0,.08)},lose:()=>tone(300,.6,'sawtooth',.12,-220),
+level:()=>arp([392,523,659,784],.4,'triangle',.1,.12),over:()=>arp([392,330,262,196],.5,'sawtooth',.08,.2)};
+function setSound(m){muted=m;soundBtn.textContent='Sound: '+(m?'OFF':'ON');}
+soundBtn.onclick=()=>setSound(!muted);
+/* ---------- helpers ---------- */
+function burst(x,y,c,n=14,o={}){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=rnd(1,o.sp||6);parts.push({x,y,dx:Math.cos(a)*s,dy:Math.sin(a)*s,r:rnd(1.5,o.r||4),c,a:1,d:o.d||.025,g:o.g||0});}}
+const ring=(x,y,c,max=200,w=4)=>rings.push({x,y,c,max,w,t:0});
+const say=(x,y,t,c)=>texts.push({x,y,t,c,a:1});
+const showBanner=(text,sub,color,dur=150)=>{banner={text,sub,color,t:0,dur}};
+const doFlash=(c,a=.6)=>{flash={c,a}};
+const after=(f,fn)=>later.push({f,fn});
+const updateHUD=()=>{scoreEl.textContent=score;comboEl.textContent='x'+combo;livesEl.textContent=lives;};
+/* ---------- level ---------- */
+function buildLevel(l){
+ bricks=[];const cols=10,rows=Math.min(5+(l>>1),8),pad=8,ox=35,oy=62,bw=(W-ox*2-pad*(cols-1))/cols,bh=26;
+ const on=(r,c)=>l===1?(c===4||c===5||r===2):l===2?(c%2===0||r===0||r===rows-1):l===3?(r+c)%2===0:l===4?(c>=r&&c<cols-r):true;
+ const grid=[],free=[];
+ for(let r=0;r<rows;r++){grid[r]=[];for(let c=0;c<cols;c++){grid[r][c]=on(r,c)?'normal':null;if(grid[r][c])free.push([r,c]);}}
+ free.sort(()=>Math.random()-.5);
+ const pool=l===1?['power']:l===2?['power','grace','rosary']:['power','grace','rosary','angel'];
+ let picks=l===1?['power']:pool.filter(()=>Math.random()<.65);
+ if(!picks.length)picks=[pool[Math.floor(Math.random()*pool.length)]];
+ if(l>=4&&Math.random()<.5)picks.push('angel');
+ picks.forEach(t=>{if(t&&free.length){const [r,c]=free.pop();grid[r][c]=t;}});
+ const pal=['#6366f1','#8b5cf6','#ec4899','#06b6d4'];
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){let t=grid[r][c];if(!t)continue;
+  if(t==='normal'&&l>=2&&Math.random()<.25)t='armor';
+  const d=t==='rosary'?{hp:1,c:pal[r%4],l:''}:(TYPES[t]||{hp:1,c:pal[r%4],l:''});
+  bricks.push({x:ox+c*(bw+pad),y:oy+r*(bh+pad),w:bw,h:bh,type:t,hp:d.hp,max:d.hp,color:d.c,label:d.l,ph:Math.random()*6,doom:false,flash:0});}
+ levelEl.textContent=l;nameEl.textContent=NAMES[(l-1)%NAMES.length];
+}
+function createBall(x,y,m=1,att=false){const s=(5.5+level*.3)*m,a=-Math.PI/2+rnd(-.3,.3);return{x,y,r:8,dx:Math.cos(a)*s,dy:Math.sin(a)*s,att,pierce:0,trail:[]};}
+function resetBall(){paddle.w=paddle.bw;paddle.shield=0;paddle.laser=0;paddle.x=W/2-paddle.w/2;balls=[createBall(W/2,paddle.y-12,1,true)];combo=1;updateHUD();}
+function launch(){let l=false;balls.forEach(b=>{if(b.att){b.att=false;l=true;}});
+ if(!l&&paddle.laser>0&&paddle.cd<=0){paddle.cd=10;SFX.laser();lasers.push({x:paddle.x+15,y:paddle.y,dy:-11},{x:paddle.x+paddle.w-15,y:paddle.y,dy:-11});}}
+/* ---------- bricks & powers ---------- */
+function removeBrick(b){const i=bricks.indexOf(b);if(i<0)return;bricks.splice(i,1);score+=40*combo;burst(b.x+b.w/2,b.y+b.h/2,b.color,16);SFX.brk();updateHUD();}
+function damageBrick(b){
+ if(b.doom)return;b.hp--;score+=20*combo;combo++;b.flash=6;const cx=b.x+b.w/2,cy=b.y+b.h/2;
+ if(b.hp<=0){removeBrick(b);special(b);}else{SFX.hit();burst(cx,cy,'#fff',6);say(cx,b.y,b.hp+' LEFT',b.color);}
+ updateHUD();}
+function special(b){
+ const cx=b.x+b.w/2,cy=b.y+b.h/2,live=()=>bricks.filter(x=>!x.doom);
+ if(b.type==='power'){
+  SFX.power();showBanner('THE POWER OF GOD DESCENDS NOW','ALL BLOCKS SHATTER IN HIS LIGHT','#ffd23f',220);doFlash('#fff3b0',.9);shake=18;
+  for(let i=0;i<9;i++)beams.push({x:40+i*90+rnd(-15,15),w:rnd(30,60),t:-i*4});
+  ring(W/2,0,'#ffd23f',950,10);ring(cx,cy,'#fff',600,6);
+  live().sort((a,c)=>a.y-c.y||a.x-c.x).forEach((k,i)=>{k.doom=true;after(45+i*3,()=>{if(bricks.includes(k)){ring(k.x+k.w/2,k.y+k.h/2,'#ffd23f',70,3);removeBrick(k);shake=Math.max(shake,5);}});});
+ }else if(b.type==='grace'){
+  SFX.grace();showBanner('GRACE RAINS DOWN','HALF OF THE BLOCKS ARE LIFTED','#ff6b87',190);doFlash('#ff9db0',.55);ring(cx,cy,'#ff6b87',400,5);
+  for(let i=0;i<140;i++)after(i*1.4,()=>parts.push({x:rnd(0,W),y:-10,dx:rnd(-.6,.6),dy:rnd(1.5,3.2),r:rnd(3,5),c:Math.random()<.5?'#ff8fa3':'#ffd1dc',a:1,d:.004,g:0}));
+  const l=live().sort(()=>Math.random()-.5);l.slice(0,Math.ceil(l.length/2)).forEach((k,i)=>{k.doom=true;after(30+i*6,()=>{if(bricks.includes(k)){burst(k.x+k.w/2,k.y+k.h/2,'#ff8fa3',14,{g:.08});removeBrick(k);}});});
+ }else if(b.type==='rosary'){
+  SFX.rosary();showBanner('ROSARY SHIELD','10 SECONDS OF PROTECTION + 2 FAST BALLS','#38bdf8',160);doFlash('#9bdcff',.4);ring(cx,cy,'#38bdf8',300,5);
+  paddle.shield=600;balls.push(createBall(cx,cy,1.35),createBall(cx,cy,1.35));
+ }else if(b.type==='angel'){
+  SFX.angel();showBanner('A GUARDIAN ANGEL IS SENT','HEAVEN FIGHTS FOR YOU','#ffffff',120);ring(cx,cy,'#fff',250,4);burst(cx,cy,'#fff',30,{g:.05,sp:4});
+  angels.push({x:cx,y:cy,t:600,wing:0,cd:0});
+ }else if(b.type==='normal'&&Math.random()<.15)drops.push({x:cx,y:cy,type:Math.random()<.5?'fire':'light'});
+}
+/* ---------- update ---------- */
+function update(){
+ frame++;
+ for(let i=later.length-1;i>=0;i--){const l=later[i];if(--l.f<=0){later.splice(i,1);l.fn();}}
+ bricks.forEach(b=>b.flash&&b.flash--);
+ if(paddle.cd>0)paddle.cd--;
+ if(paddle.shield>0){paddle.shield--;paddle.w=W;paddle.x=0;if(!paddle.shield){paddle.w=paddle.bw;paddle.x=W/2-60;say(W/2,paddle.y-24,'Shield fades','#a8c0ff');}}
+ else{if(rk)paddle.x+=paddle.speed;if(lk)paddle.x-=paddle.speed;clamp();}
+ if(paddle.laser>0)paddle.laser--;
+ for(let i=balls.length-1;i>=0;i--){const b=balls[i];
+  if(b.pierce>0&&--b.pierce===0){}
+  if(b.att){b.x=paddle.x+paddle.w/2;b.y=paddle.y-b.r-2;continue;}
+  b.trail.push({x:b.x,y:b.y});if(b.trail.length>10)b.trail.shift();
+  b.x+=b.dx;b.y+=b.dy;
+  if(b.x-b.r<0){b.x=b.r;b.dx=Math.abs(b.dx);}else if(b.x+b.r>W){b.x=W-b.r;b.dx=-Math.abs(b.dx);}
+  if(b.y-b.r<0){b.y=b.r;b.dy=Math.abs(b.dy);}
+  if(b.dy>0&&b.y+b.r>=paddle.y&&b.y-b.r<=paddle.y+paddle.h&&b.x>=paddle.x&&b.x<=paddle.x+paddle.w){
+   const hp=(b.x-(paddle.x+paddle.w/2))/(paddle.w/2),a=hp*(Math.PI/3),sp=Math.hypot(b.dx,b.dy);
+   b.dx=sp*Math.sin(a);b.dy=-Math.abs(sp*Math.cos(a));b.y=paddle.y-b.r-1;combo=1;updateHUD();SFX.pad();}
+  if(b.y-b.r>H){balls.splice(i,1);continue;}
+  for(let j=bricks.length-1;j>=0;j--){const r=bricks[j];if(r.doom)continue;
+   if(b.x+b.r>r.x&&b.x-b.r<r.x+r.w&&b.y+b.r>r.y&&b.y-b.r<r.y+r.h){
+    if(!b.pierce){const ol=b.x+b.r-r.x,or=r.x+r.w-(b.x-b.r),ot=b.y+b.r-r.y,ob=r.y+r.h-(b.y-b.r),m=Math.min(ol,or,ot,ob);
+     if(m===ol||m===or)b.dx=-b.dx;else b.dy=-b.dy;}
+    if(Math.hypot(b.dx,b.dy)<11){b.dx*=1.005;b.dy*=1.005;}
+    damageBrick(r);break;}}
+ }
+ if(running&&!balls.length){lives--;updateHUD();SFX.lose();shake=8;if(lives<=0){usedContinue?gameOver():showPrayer();return;}resetBall();}
+ for(let i=angels.length-1;i>=0;i--){const a=angels[i];a.t--;a.wing+=.25;if(a.cd>0)a.cd--;
+  let tg=null,bd=1e9;bricks.forEach(r=>{if(r.doom)return;const d=Math.hypot(r.x+r.w/2-a.x,r.y+r.h/2-a.y);if(d<bd){bd=d;tg=r;}});
+  if(tg){const an=Math.atan2(tg.y+tg.h/2-a.y,tg.x+tg.w/2-a.x);a.x+=Math.cos(an)*6;a.y+=Math.sin(an)*6;
+   if(!a.cd&&a.x>tg.x-6&&a.x<tg.x+tg.w+6&&a.y>tg.y-6&&a.y<tg.y+tg.h+6){a.cd=14;damageBrick(tg);}}
+  if(frame%2===0)parts.push({x:a.x+rnd(-8,8),y:a.y+8,dx:rnd(-.3,.3),dy:rnd(.3,1),r:rnd(1,2.5),c:'#ffe9a0',a:1,d:.03,g:0});
+  if(a.t<=0)angels.splice(i,1);}
+ for(let i=drops.length-1;i>=0;i--){const p=drops[i];p.y+=2.6;
+  if(p.y+10>=paddle.y&&p.y<=paddle.y+paddle.h&&p.x>=paddle.x-10&&p.x<=paddle.x+paddle.w+10){
+   SFX.pick();
+   if(p.type==='fire'){showBanner('SPIRIT FIRE','THE HOLY SPIRIT BURNS THROUGH','#ff9a1f',90);balls.forEach(b=>b.pierce=480);}
+   else{showBanner('LIGHT BEAMS','CLICK OR SPACE TO FIRE','#2dffd0',90);paddle.laser=600;}
+   ring(p.x,paddle.y,p.type==='fire'?'#ff9a1f':'#2dffd0',120,3);drops.splice(i,1);
+  }else if(p.y>H)drops.splice(i,1);}
+ for(let i=lasers.length-1;i>=0;i--){const l=lasers[i];l.y+=l.dy;let hit=false;
+  for(let j=bricks.length-1;j>=0;j--){const r=bricks[j];if(r.doom)continue;if(l.x>r.x&&l.x<r.x+r.w&&l.y>r.y&&l.y<r.y+r.h){damageBrick(r);hit=true;break;}}
+  if(hit||l.y<0)lasers.splice(i,1);}
+ for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.dx;p.y+=p.dy;p.dy+=p.g;p.a-=p.d;if(p.a<=0||p.y>H+20)parts.splice(i,1);}
+ for(let i=rings.length-1;i>=0;i--)if(++rings[i].t>40)rings.splice(i,1);
+ for(let i=beams.length-1;i>=0;i--)if(++beams[i].t>70)beams.splice(i,1);
+ for(let i=texts.length-1;i>=0;i--){const t=texts[i];t.y-=.7;t.a-=.016;if(t.a<=0)texts.splice(i,1);}
+ if(banner&&++banner.t>banner.dur)banner=null;
+ if(flash){flash.a-=.02;if(flash.a<=0)flash=null;}
+ shake*=.9;
+ if(running&&!bricks.length){
+  level++;SFX.level();showBanner('LEVEL '+level,NAMES[(level-1)%NAMES.length].toUpperCase(),'#ffd23f',120);
+  buildLevel(level);later=[];angels=[];drops=[];lasers=[];paddle.shield=0;paddle.w=paddle.bw;paddle.x=W/2-paddle.w/2;
+  const k=balls[0]||createBall(W/2,paddle.y-12);k.att=true;k.trail=[];balls=[k];}
+}
+function clamp(){if(paddle.x<0)paddle.x=0;if(paddle.x+paddle.w>W)paddle.x=W-paddle.w;}
+/* ---------- draw ---------- */
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);}
+function drawBrick(b){
+ const p=.5+.5*Math.sin(frame*.08+b.ph),sp=b.type!=='normal'&&b.type!=='rosary';
+ ctx.save();if(b.doom&&frame%4<2)ctx.globalAlpha=.65;
+ ctx.shadowColor=b.color;ctx.shadowBlur=sp?10+10*p:5;ctx.fillStyle=b.color;rr(b.x,b.y,b.w,b.h,6);ctx.fill();ctx.shadowBlur=0;
+ const g=ctx.createLinearGradient(0,b.y,0,b.y+b.h);g.addColorStop(0,'rgba(255,255,255,.3)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.3)');
+ ctx.fillStyle=g;rr(b.x,b.y,b.w,b.h,6);ctx.fill();
+ ctx.strokeStyle=b.type==='armor'?'#d1fae5':'rgba(255,255,255,.45)';ctx.lineWidth=b.type==='armor'?2:1;rr(b.x+.5,b.y+.5,b.w-1,b.h-1,6);ctx.stroke();
+ if(b.type==='armor'){ctx.fillStyle='#d1fae5';[[5,5],[b.w-5,5],[5,b.h-5],[b.w-5,b.h-5]].forEach(([dx,dy])=>{ctx.beginPath();ctx.arc(b.x+dx,b.y+dy,1.5,0,6.3);ctx.fill();});
+  if(b.hp<b.max){ctx.strokeStyle='rgba(0,0,0,.6)';ctx.beginPath();ctx.moveTo(b.x+b.w*.3,b.y);ctx.lineTo(b.x+b.w*.45,b.y+b.h*.5);ctx.lineTo(b.x+b.w*.35,b.y+b.h);ctx.stroke();}}
+ if(sp&&b.type!=='angel'&&b.type!=='power'){ctx.fillStyle='rgba(255,255,255,'+(.08+.12*p)+')';rr(b.x,b.y,b.w,b.h,6);ctx.fill();}
+ if(b.flash){ctx.fillStyle='rgba(255,255,255,'+b.flash/7+')';rr(b.x,b.y,b.w,b.h,6);ctx.fill();}
+ if(b.label){const dark=b.type==='power'||b.type==='angel'||b.type==='rosary';ctx.fillStyle=dark?'#101020':'#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2-(b.hp>1?3:0));
+  for(let k=0;k<b.hp&&b.hp>1;k++){ctx.beginPath();ctx.arc(b.x+b.w/2+(k-(b.hp-1)/2)*8,b.y+b.h-5,2,0,6.3);ctx.fill();}}
+ ctx.restore();}
+function draw(){
+ let g=ctx.createRadialGradient(W/2,H*.35,40,W/2,H*.4,540);g.addColorStop(0,'#1d2755');g.addColorStop(.6,'#0b1030');g.addColorStop(1,'#04050d');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ stars.forEach(s=>{s.y+=s.s*.3;if(s.y>H)s.y=0;ctx.globalAlpha=.3+.7*Math.abs(Math.sin(frame*.03+s.p));ctx.fillStyle='#cfe0ff';ctx.fillRect(s.x,s.y,s.r,s.r);});
+ ctx.globalAlpha=.05+.02*Math.sin(frame*.02);ctx.fillStyle='#ffd23f';
+ for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(W/2,-40);ctx.lineTo(W/2+(i-2)*260-70,H);ctx.lineTo(W/2+(i-2)*260+70,H);ctx.fill();}
+ ctx.globalAlpha=.06;ctx.fillRect(W/2-9,110,18,380);ctx.fillRect(W/2-110,215,220,18);ctx.globalAlpha=1;
+ ctx.save();if(shake>.3)ctx.translate(rnd(-shake,shake),rnd(-shake,shake));
+ bricks.forEach(drawBrick);
+ ctx.globalCompositeOperation='lighter';
+ beams.forEach(b=>{if(b.t<0)return;const p=b.t/70,hy=p*(H+300),a=1-p*.8,gr=ctx.createLinearGradient(0,hy-400,0,hy);gr.addColorStop(0,'rgba(255,210,63,0)');gr.addColorStop(1,'rgba(255,240,170,'+a+')');ctx.fillStyle=gr;ctx.fillRect(b.x-b.w/2,hy-400,b.w,400);});
+ rings.forEach(r=>{const p=r.t/40;ctx.globalAlpha=1-p;ctx.strokeStyle=r.c;ctx.lineWidth=r.w*(1-p)+1;ctx.beginPath();ctx.arc(r.x,r.y,r.max*(1-Math.pow(1-p,3)),0,6.3);ctx.stroke();});
+ ctx.globalAlpha=1;parts.forEach(p=>{ctx.globalAlpha=Math.max(0,p.a);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.3);ctx.fill();});ctx.globalAlpha=1;
+ ctx.globalCompositeOperation='source-over';
+ // paddle
+ ctx.save();const sh=paddle.shield>0&&(paddle.shield>120||frame%8<4),c1=sh?'#38bdf8':'#ffd23f';
+ ctx.shadowColor=c1;ctx.shadowBlur=18;const pg=ctx.createLinearGradient(0,paddle.y,0,paddle.y+paddle.h);pg.addColorStop(0,sh?'#bfe9ff':'#fff2b0');pg.addColorStop(1,c1);ctx.fillStyle=pg;rr(paddle.x,paddle.y,paddle.w,paddle.h,8);ctx.fill();ctx.shadowBlur=0;
+ if(paddle.laser>0){ctx.fillStyle='#2dffd0';ctx.fillRect(paddle.x+10,paddle.y-6,10,8);ctx.fillRect(paddle.x+paddle.w-20,paddle.y-6,10,8);}
+ if(paddle.shield>0){ctx.fillStyle='#e6f7ff';for(let i=0;i<20;i++){const x=(i*40+frame*1.5)%W;ctx.beginPath();ctx.arc(x,paddle.y+paddle.h/2+Math.sin(i+frame*.1)*2,3,0,6.3);ctx.fill();}}
+ ctx.restore();
+ balls.forEach(b=>{const f=b.pierce>0,col=f?'255,154,31':'255,255,255';
+  b.trail.forEach((t,i)=>{ctx.fillStyle='rgba('+col+','+(i/b.trail.length*.35)+')';ctx.beginPath();ctx.arc(t.x,t.y,b.r*i/b.trail.length,0,6.3);ctx.fill();});
+  ctx.save();ctx.shadowColor=f?'#ff9a1f':'#ffd23f';ctx.shadowBlur=16;const bg=ctx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,b.r);bg.addColorStop(0,'#fff');bg.addColorStop(1,f?'#ff9a1f':'#ffe9a0');ctx.fillStyle=bg;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.3);ctx.fill();ctx.restore();});
+ angels.forEach(a=>{ctx.save();ctx.translate(a.x,a.y);const fl=Math.sin(a.wing)*8;ctx.shadowColor='#ffe9a0';ctx.shadowBlur=18;ctx.fillStyle='rgba(255,255,255,.9)';
+  ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-22,-18+fl,-32,6);ctx.quadraticCurveTo(-12,8,0,0);ctx.moveTo(0,0);ctx.quadraticCurveTo(22,-18+fl,32,6);ctx.quadraticCurveTo(12,8,0,0);ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,7,0,6.3);ctx.fill();ctx.strokeStyle='#ffd23f';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-13,8,3,0,0,6.3);ctx.stroke();ctx.restore();});
+ drops.forEach(p=>{const f=p.type==='fire';ctx.save();ctx.shadowColor=f?'#ff9a1f':'#2dffd0';ctx.shadowBlur=12;ctx.fillStyle=f?'#ff9a1f':'#2dffd0';rr(p.x-24,p.y-9,48,18,9);ctx.fill();ctx.fillStyle='#101020';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(f?'SPIRIT':'LIGHT',p.x,p.y+1);ctx.restore();});
+ ctx.fillStyle='#2dffd0';lasers.forEach(l=>{ctx.shadowColor='#2dffd0';ctx.shadowBlur=8;ctx.fillRect(l.x-2,l.y,4,16);});ctx.shadowBlur=0;
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 13px sans-serif';texts.forEach(t=>{ctx.globalAlpha=Math.max(0,t.a);ctx.fillStyle=t.c;ctx.fillText(t.t,t.x,t.y);});ctx.globalAlpha=1;
+ ctx.restore();
+ if(flash){ctx.globalAlpha=Math.max(0,flash.a);ctx.fillStyle=flash.c;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+ if(banner){const b=banner,p=b.t/b.dur,a=p<.12?p/.12:p>.8?(1-p)/.2:1,s=p<.12?1.7-.7*p/.12:1+(p-.12)*.06;
+  ctx.save();ctx.globalAlpha=a;ctx.translate(W/2,H/2-30);
+  const bg=ctx.createLinearGradient(-W/2,0,W/2,0);bg.addColorStop(0,'rgba(0,0,0,0)');bg.addColorStop(.2,'rgba(0,0,0,.65)');bg.addColorStop(.8,'rgba(0,0,0,.65)');bg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=bg;ctx.fillRect(-W/2,-55,W,110);
+  ctx.scale(s,s);ctx.textAlign='center';ctx.textBaseline='middle';let fs=44;ctx.font='800 '+fs+'px Georgia,serif';const w=ctx.measureText(b.text).width;if(w>720){fs=fs*720/w;ctx.font='800 '+fs+'px Georgia,serif';}
+  ctx.shadowColor=b.color;ctx.shadowBlur=30;ctx.fillStyle=b.color;ctx.fillText(b.text,0,-10);ctx.fillStyle='#fff';ctx.shadowBlur=8;ctx.fillText(b.text,0,-10);
+  ctx.shadowBlur=0;ctx.fillStyle='#dbe6ff';ctx.font='600 16px sans-serif';ctx.fillText(b.sub,0,30);ctx.restore();}
+}
+/* ---------- last chance: Hail Mary ---------- */
+const P1='Hail Mary, full of grace, the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus.';
+const P2='Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.';
+const norm=s=>s.toLowerCase().replace(/\bthee\b|\bthou\b/g,'you').replace(/\bthy\b/g,'your').replace(/\bart\b/g,'are').replace(/amongst/g,'among').replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim().replace(/\s?amen$/,'');
+let usedContinue=false,need=2;
+function showPrayer(){running=false;SFX.lose();need=Math.random()<.5?1:2;
+ $('ask').textContent=need===2?'Complete the Hail Mary to continue from where you fell, with 2 lives. Here is the first part. Type the last part:':'Complete the Hail Mary to continue from where you fell, with 2 lives. Here is the last part. Type the first part:';
+ $('given').textContent=need===2?P1:P2;$('ans').value='';$('msg').textContent='';$('pray').style.display='flex';setTimeout(()=>$('ans').focus(),60);}
+function submitPrayer(){const t=need===2?P2:P1;
+ if(norm($('ans').value)===norm(t)){usedContinue=true;lives=2;$('pray').style.display='none';resetBall();SFX.level();showBanner('MERCY GRANTED','CONTINUE WITH 2 LIVES','#9bdcff',130);doFlash('#9bdcff',.4);running=true;}
+ else{$('msg').textContent='Not quite. Check the words and try again.';SFX.pad();}}
+$('subBtn').onclick=submitPrayer;$('giveBtn').onclick=gameOver;
+$('ans').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitPrayer();}});
+/* ---------- flow ---------- */
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+function gameOver(){running=false;SFX.over();$('pray').style.display='none';overlay.style.display='flex';overlay.querySelector('h1').textContent='GAME OVER';overlay.querySelector('.sub').textContent='Final score: '+score+'  ·  Reached level '+level;startBtn.textContent='PLAY AGAIN';}
+startBtn.onclick=()=>{
+ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();
+ usedContinue=false;$('pray').style.display='none';score=0;combo=1;level=1;lives=3;angels=[];drops=[];lasers=[];parts=[];rings=[];beams=[];texts=[];later=[];banner=null;flash=null;
+ overlay.querySelector('h1').textContent='HEAVENLY BREAKER';overlay.querySelector('.sub').textContent='Shatter the darkness with divine light. Break the sacred blocks to call down heavenly help. Powers appear at random, and more unlock as you climb the levels.';
+ buildLevel(1);resetBall();overlay.style.display='none';running=true;showBanner('LEVEL 1','THE CROSS','#ffd23f',100);};
+function px(e){const r=cv.getBoundingClientRect();return(e.clientX-r.left)*W/r.width;}
+function moveTo(x){if(!running||paddle.shield>0)return;paddle.x=x-paddle.w/2;clamp();}
+cv.addEventListener('mousemove',e=>moveTo(px(e)));
+cv.addEventListener('click',()=>running&&launch());
+cv.addEventListener('touchmove',e=>{e.preventDefault();moveTo(px(e.touches[0]));},{passive:false});
+cv.addEventListener('touchstart',e=>{e.preventDefault();moveTo(px(e.touches[0]));running&&launch();},{passive:false});
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='ArrowRight')rk=true;if(e.key==='ArrowLeft')lk=true;if(e.key===' '){e.preventDefault();running&&launch();}if(e.key==='m'||e.key==='M')setSound(!muted);});
+document.addEventListener('keyup',e=>{if(e.key==='ArrowRight')rk=false;if(e.key==='ArrowLeft')lk=false;});
+loop();
+</script></body></html>
