@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PrayerRace | Catholic Prayer Racing</title>
+<style>
+:root{
+  --bg-dark:#0b0e1a;--panel-bg:#13182e;--panel-border:#263056;
+  --gold:#f5b942;--accent-blue:#38bdf8;--accent-green:#22c55e;
+  --accent-red:#ef4444;--text-main:#f8fafc;--text-muted:#94a3b8;--asphalt:#1c2237;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+body{
+  background:radial-gradient(circle at top,#171e3a 0%,var(--bg-dark) 80%);
+  color:var(--text-main);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;
+}
+.game-wrapper{width:100%;max-width:1050px;display:flex;flex-direction:column;gap:16px}
+.top-bar,.setup-bar,.typing-console{
+  background:var(--panel-bg);border:1px solid var(--panel-border);
+  border-radius:14px;padding:16px 22px;box-shadow:0 10px 25px rgba(0,0,0,.4);
+}
+.top-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-badge{
+  background:linear-gradient(135deg,var(--gold),#d97706);color:#0b0e1a;
+  font-weight:900;padding:6px 12px;border-radius:8px;letter-spacing:1px;font-size:.9rem;
+}
+.brand h1{font-size:1.3rem;font-weight:800}
+.top-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.points-pill{
+  background:rgba(245,185,66,.12);border:1px solid var(--gold);color:var(--gold);
+  padding:6px 14px;border-radius:20px;font-weight:700;font-size:.9rem;
+}
+.btn{
+  background:#1e2646;color:var(--text-main);border:1px solid var(--panel-border);
+  padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;transition:.15s;
+}
+.btn:hover{border-color:var(--gold);transform:translateY(-1px)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#e09612);color:#0b0e1a;border:none;font-weight:800}
+.setup-bar{display:grid;grid-template-columns:1fr 1.2fr auto;gap:12px;align-items:end}
+@media(max-width:780px){.setup-bar{grid-template-columns:1fr}}
+.control-group{display:flex;flex-direction:column;gap:5px}
+.control-group label{font-size:.75rem;text-transform:uppercase;color:var(--text-muted);font-weight:700}
+select{background:#0d1224;color:var(--text-main);border:1px solid var(--panel-border);padding:9px 12px;border-radius:8px;font-weight:600}
+.mode-actions{display:flex;align-items:center;gap:12px;height:38px}
+.toggle-study{display:flex;align-items:center;gap:6px;font-size:.9rem;color:var(--text-muted);cursor:pointer}
+.track-container{position:relative;background:var(--asphalt);border:2px solid var(--panel-border);border-radius:16px;overflow:hidden}
+.track-header{background:#101529;padding:10px 20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--panel-border)}
+.prayer-title-display{font-weight:800;color:var(--gold)}
+.live-metrics{display:flex;gap:18px;font-weight:700}
+.metric span{color:var(--accent-blue)}
+#raceCanvas{display:block;width:100%;height:auto;background:#1c2237}
+.countdown-banner{
+  position:absolute;top:58%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(11,14,26,.9);border:2px solid var(--gold);color:var(--gold);
+  padding:10px 28px;border-radius:12px;font-size:1.5rem;font-weight:900;pointer-events:none;
+}
+.countdown-banner.hidden{opacity:0}
+.typing-console{display:flex;flex-direction:column;gap:12px}
+.boost-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.boost-label{font-size:.8rem;font-weight:800;color:var(--gold)}
+.boost-bar-wrap{flex:1;min-width:180px;height:10px;background:#0d1224;border-radius:99px;overflow:hidden;border:1px solid var(--panel-border)}
+.boost-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-blue),var(--gold));transition:width .15s}
+.boost-ready{box-shadow:0 0 12px var(--gold)}
+.prompt-display{background:#0d1224;border:2px solid var(--panel-border);border-radius:12px;padding:18px 22px;font-size:1.3rem;line-height:1.65;cursor:text;user-select:none;min-height:105px}
+.prompt-display.focused{border-color:var(--accent-blue)}
+.prompt-display.error-flash{border-color:var(--accent-red);animation:shake .2s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.char-done{color:var(--accent-green);font-weight:600}
+.char-current{background:var(--accent-blue);color:#0b0e1a;border-radius:3px;padding:0 2px;font-weight:800}
+.char-rest{color:#cbd5e1}
+.console-hint{font-size:.85rem;color:var(--text-muted);text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(7,10,20,.85);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.overlay.open{display:flex}
+.modal-card{background:var(--panel-bg);border:2px solid var(--gold);border-radius:16px;padding:28px;max-width:560px;width:100%;text-align:center}
+.place-badge{font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:4px}
+.modal-sub{color:var(--text-muted);margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.stat-box{background:#0d1224;border:1px solid var(--panel-border);border-radius:10px;padding:14px 8px}
+.stat-val{font-size:1.5rem;font-weight:900;color:var(--accent-blue)}
+.stat-box.gold .stat-val{color:var(--gold)}
+.stat-lbl{font-size:.75rem;text-transform:uppercase;color:var(--text-muted);margin-top:4px}
+.modal-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.garage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:18px 0}
+.car-card{background:#0d1224;border:1px solid var(--panel-border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.car-card.equipped{border-color:var(--gold);background:rgba(245,185,66,.08)}
+.car-swatch{width:64px;height:28px;border-radius:6px;position:relative;margin:4px 0}
+.car-swatch::after{content:'';position:absolute;left:4px;right:4px;top:11px;height:6px;background:#fff}
+.car-name{font-weight:800;font-size:.95rem}
+</style>
+</head>
+<body>
+<div class="game-wrapper">
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">PRAYERRACE</div>
+      <h1>Catholic Prayer Racing</h1>
+    </div>
+    <div class="top-controls">
+      <div class="points-pill">Grace Points: <span id="gracePointsDisplay">0</span></div>
+      <button class="btn" id="garageBtn">Garage</button>
+      <button class="btn" id="soundBtn">Sound: ON</button>
+    </div>
+  </header>
+
+  <section class="setup-bar">
+    <div class="control-group">
+      <label for="classSelect">1. Racing Class (Length)</label>
+      <select id="classSelect">
+        <option value="1">Class 1: Warm-Up Sprint (Short)</option>
+        <option value="2">Class 2: Devotional Circuit (Medium)</option>
+        <option value="3">Class 3: Liturgical Grand Prix (Long)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="prayerSelect">2. Select Catholic Prayer</label>
+      <select id="prayerSelect"></select>
+    </div>
+    <div class="mode-actions">
+      <label class="toggle-study"><input type="checkbox" id="studyModeToggle"> Study Mode</label>
+      <button class="btn btn-gold" id="startRaceBtn">Start Race</button>
+    </div>
+  </section>
+
+  <section class="track-container">
+    <div class="track-header">
+      <div class="prayer-title-display" id="activePrayerTitle">Sign of the Cross</div>
+      <div class="live-metrics">
+        <div class="metric">SPEED: <span id="wpmDisplay">0</span> WPM</div>
+        <div class="metric">ACCURACY: <span id="accDisplay">100%</span></div>
+      </div>
+    </div>
+    <canvas id="raceCanvas" width="1000" height="270"></canvas>
+    <div class="countdown-banner" id="countdownBanner">GET READY…</div>
+  </section>
+
+  <section class="typing-console">
+    <div class="boost-row">
+      <div class="boost-label">GRACE BOOST: <span id="boostText">0 / 15 STREAK</span></div>
+      <div class="boost-bar-wrap" id="boostWrap"><div class="boost-bar-fill" id="boostFill"></div></div>
+    </div>
+    <div class="prompt-display" id="promptBox" tabindex="0"></div>
+    <div class="console-hint">Click the text box or press <strong>Start Race</strong>. Press <strong>ENTER</strong> when Grace Boost is full to skip a word!</div>
+  </section>
+</div>
+<div class="overlay" id="resultsModal">
+  <div class="modal-card">
+    <div class="place-badge" id="resultPlace">1st Place!</div>
+    <div class="modal-sub" id="resultPrayerName">Prayer Completed</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-val" id="finalWpm">0</div><div class="stat-lbl">Words / Min</div></div>
+      <div class="stat-box"><div class="stat-val" id="finalAcc">100%</div><div class="stat-lbl">Accuracy</div></div>
+      <div class="stat-box gold"><div class="stat-val" id="finalPoints">+0</div><div class="stat-lbl">Grace Points</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="replayBtn">Race Same Prayer</button>
+      <button class="btn btn-gold" id="nextPrayerBtn">Next Prayer →</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="garageModal">
+  <div class="modal-card">
+    <div class="place-badge">Racer Garage</div>
+    <div class="modal-sub">Unlock custom vehicles using your Grace Points.</div>
+    <div class="garage-grid" id="garageGrid"></div>
+    <button class="btn btn-gold" id="closeGarageBtn">Back to Track</button>
+  </div>
+</div>
+<script>
+const PRAYERS = [
+  { id: "sign", class: 1, title: "Sign of the Cross",
+    text: "In the name of the Father, and of the Son, and of the Holy Spirit. Amen." },
+  { id: "glory", class: 1, title: "Glory Be",
+    text: "Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and ever shall be, world without end. Amen." },
+  { id: "fatima", class: 1, title: "Fatima Prayer",
+    text: "O my Jesus, forgive us our sins, save us from the fires of hell, and lead all souls to Heaven, especially those most in need of Thy mercy. Amen." },
+  { id: "ourfather", class: 2, title: "Our Father",
+    text: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come, thy will be done on earth as it is in heaven. Give us this day our daily bread, and forgive us our trespasses, as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen." },
+  { id: "hailmary", class: 2, title: "Hail Mary",
+    text: "Hail, Mary, full of grace, the Lord is with thee. Blessed art thou amongst women and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen." },
+  { id: "hailholyqueen", class: 3, title: "Hail, Holy Queen",
+    text: "Hail, Holy Queen, Mother of Mercy, our life, our sweetness, and our hope. To thee do we cry, poor banished children of Eve. To thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary. Amen." },
+  { id: "stmichael", class: 3, title: "Prayer to St. Michael",
+    text: "Saint Michael the Archangel, defend us in battle. Be our protection against the wickedness and snares of the devil; may God rebuke him, we humbly pray; and do thou, O Prince of the Heavenly Host, by the power of God, cast into hell Satan and all the evil spirits who prowl about the world seeking the ruin of souls. Amen." }
+];
+
+const CARS = [
+  { id: "gold", name: "Vatican Gold GT", color: "#f5b942", stripe: "#ffffff", cost: 0 },
+  { id: "azure", name: "Marian Azure", color: "#38bdf8", stripe: "#f8fafc", cost: 150 },
+  { id: "crimson", name: "Martyr Crimson", color: "#ef4444", stripe: "#f5b942", cost: 300 },
+  { id: "emerald", name: "Liturgical Emerald", color: "#22c55e", stripe: "#ffffff", cost: 500 },
+  { id: "royal", name: "Advent Royal", color: "#a855f7", stripe: "#f5b942", cost: 800 }
+];
+
+let gracePoints = Number(localStorage.getItem("pr_points") || 0);
+let unlockedCars = JSON.parse(localStorage.getItem("pr_unlocked") || '["gold"]');
+let equippedCarId = localStorage.getItem("pr_equipped") || "gold";
+let soundOn = true, currentPrayer = PRAYERS[0], typedIndex = 0;
+let totalKeystrokes = 0, correctKeystrokes = 0, boostStreak = 0;
+const BOOST_MAX = 15;
+let raceState = "idle", startTime = 0, boostTimer = 0, superBoostTimer = 0, roadOffset = 0, finishOrder = [];
+
+const canvas = document.getElementById("raceCanvas"), ctx = canvas.getContext("2d");
+const START_X = 70, FINISH_X = 890, TRACK_DIST = FINISH_X - START_X;
+const playerCar = { x: START_X, y: 185, width: 68, height: 34, label: "YOU" };
+const bots = [
+  { x: START_X, y: 55, width: 68, height: 34, color: "#ec4899", stripe: "#fff", baseWpm: 34, label: "BOT 1" },
+  { x: START_X, y: 120, width: 68, height: 34, color: "#8b5cf6", stripe: "#cbd5e1", baseWpm: 46, label: "BOT 2" }
+];
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type = "sine", dur = 0.08, vol = 0.08) {
+  if (!soundOn) return;
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+const classSelect = document.getElementById("classSelect"), prayerSelect = document.getElementById("prayerSelect");
+const studyModeToggle = document.getElementById("studyModeToggle"), promptBox = document.getElementById("promptBox");
+const countdownBanner = document.getElementById("countdownBanner");
+
+function populatePrayers() {
+  const filtered = PRAYERS.filter(p => p.class === Number(classSelect.value));
+  prayerSelect.innerHTML = filtered.map(p => `<option value="${p.id}">${p.title}</option>`).join("");
+  selectPrayer(filtered[0].id);
+}
+
+function selectPrayer(id) {
+  currentPrayer = PRAYERS.find(p => p.id === id) || PRAYERS[0];
+  document.getElementById("activePrayerTitle").textContent = currentPrayer.title;
+  resetRace();
+}
+
+function resetRace() {
+  raceState = "idle"; typedIndex = 0; totalKeystrokes = 0; correctKeystrokes = 0;
+  boostStreak = 0; boostTimer = 0; superBoostTimer = 0; finishOrder = [];
+  playerCar.x = START_X; bots.forEach(b => b.x = START_X);
+  document.getElementById("wpmDisplay").textContent = "0";
+  document.getElementById("accDisplay").textContent = "100%";
+  countdownBanner.textContent = "GET READY…"; countdownBanner.classList.remove("hidden");
+  updateBoostUI(); renderPrompt();
+}
+
+function startCountdown() {
+  resetRace(); raceState = "countdown"; promptBox.focus();
+  let count = 3; countdownBanner.textContent = `STARTING IN ${count}…`; playTone(440, "triangle", 0.12);
+  const timer = setInterval(() => {
+    count--;
+    if (count > 0) { countdownBanner.textContent = `STARTING IN ${count}…`; playTone(440, "triangle", 0.12); }
+    else {
+      clearInterval(timer); countdownBanner.textContent = "GO!"; playTone(880, "triangle", 0.25);
+      raceState = "racing"; startTime = performance.now();
+      setTimeout(() => countdownBanner.classList.add("hidden"), 600);
+    }
+  }, 750);
+}
+
+function renderPrompt() {
+  const t = currentPrayer.text, esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const cur = esc(t[typedIndex] || "");
+  promptBox.innerHTML = `<span class="char-done">${esc(t.slice(0, typedIndex))}</span>` +
+    `<span class="char-current">${cur === " " ? "&nbsp;" : cur}</span>` +
+    `<span class="char-rest">${esc(t.slice(typedIndex + 1))}</span>`;
+}
+
+function updateBoostUI() {
+  document.getElementById("boostText").textContent = boostStreak >= BOOST_MAX ? "READY! PRESS ENTER" : `${boostStreak} / ${BOOST_MAX} STREAK`;
+  document.getElementById("boostFill").style.width = `${Math.min(100, (boostStreak / BOOST_MAX) * 100)}%`;
+  document.getElementById("boostWrap").classList.toggle("boost-ready", boostStreak >= BOOST_MAX);
+}
+
+function updateMetrics() {
+  if (raceState !== "racing") return;
+  const min = (performance.now() - startTime) / 60000;
+  if (min > 0.005) document.getElementById("wpmDisplay").textContent = Math.round((typedIndex / 5) / min);
+  const acc = totalKeystrokes > 0 ? Math.round((correctKeystrokes / totalKeystrokes) * 100) : 100;
+  document.getElementById("accDisplay").textContent = `${acc}%`;
+}
+
+function checkFinish() {
+  if (typedIndex < currentPrayer.text.length || raceState !== "racing") return;
+  raceState = "finished";
+  if (!finishOrder.includes("player")) finishOrder.push("player");
+  const min = Math.max(0.01, (performance.now() - startTime) / 60000);
+  const wpm = Math.round((currentPrayer.text.length / 5) / min);
+  const acc = totalKeystrokes > 0 ? Math.round((correctKeystrokes / totalKeystrokes) * 100) : 100;
+  const place = finishOrder.indexOf("player") + 1;
+  const earned = Math.round(((currentPrayer.class * 50) + (place === 1 ? 60 : place === 2 ? 30 : 15) + wpm) * (acc / 100));
+  gracePoints += earned; localStorage.setItem("pr_points", gracePoints);
+  document.getElementById("gracePointsDisplay").textContent = gracePoints;
+  document.getElementById("resultPlace").textContent = studyModeToggle.checked ? "Study Complete!" : (["1st Place!","2nd Place!","3rd Place!"][place - 1] || "Finished!");
+  document.getElementById("resultPrayerName").textContent = currentPrayer.title;
+  document.getElementById("finalWpm").textContent = wpm;
+  document.getElementById("finalAcc").textContent = `${acc}%`;
+  document.getElementById("finalPoints").textContent = `+${earned}`;
+  document.getElementById("resultsModal").classList.add("open");
+}
+
+window.addEventListener("keydown", (e) => {
+  if (document.querySelector(".overlay.open") || e.target.tagName === "SELECT") return;
+  if (raceState === "idle" && document.activeElement === promptBox && e.key.length === 1) {
+    raceState = "racing"; startTime = performance.now(); countdownBanner.classList.add("hidden");
+  }
+  if (raceState !== "racing") return;
+  if (e.key === "Enter" && boostStreak >= BOOST_MAX) {
+    e.preventDefault();
+    while (typedIndex < currentPrayer.text.length && currentPrayer.text[typedIndex] !== " ") typedIndex++;
+    while (typedIndex < currentPrayer.text.length && currentPrayer.text[typedIndex] === " ") typedIndex++;
+    boostStreak = 0; superBoostTimer = 28; playTone(660, "sawtooth", 0.22, 0.1);
+    playerCar.x = START_X + (typedIndex / currentPrayer.text.length) * TRACK_DIST;
+    updateBoostUI(); renderPrompt(); checkFinish(); return;
+  }
+  if (e.key.length !== 1) return;
+  e.preventDefault(); totalKeystrokes++;
+  if (e.key === currentPrayer.text[typedIndex]) {
+    typedIndex++; correctKeystrokes++; boostStreak = Math.min(BOOST_MAX, boostStreak + 1); boostTimer = 10;
+    playTone(520 + boostStreak * 12, "sine", 0.05, 0.05);
+    playerCar.x = START_X + (typedIndex / currentPrayer.text.length) * TRACK_DIST;
+    updateBoostUI(); renderPrompt(); updateMetrics(); checkFinish();
+  } else {
+    boostStreak = 0; updateBoostUI(); playTone(160, "square", 0.09, 0.05);
+    promptBox.classList.remove("error-flash"); void promptBox.offsetWidth; promptBox.classList.add("error-flash");
+  }
+});
+function drawTrack() {
+  ctx.fillStyle = "#166534"; ctx.fillRect(0, 0, canvas.width, 32); ctx.fillRect(0, 238, canvas.width, 32);
+  for (let x = -40; x < canvas.width + 40; x += 40) {
+    ctx.fillStyle = Math.floor((x + roadOffset) / 40) % 2 === 0 ? "#f5b942" : "#f8fafc";
+    ctx.fillRect(x - (roadOffset % 40), 32, 40, 6); ctx.fillRect(x - (roadOffset % 40), 232, 40, 6);
+  }
+  ctx.fillStyle = "#1c2237"; ctx.fillRect(0, 38, canvas.width, 194);
+  ctx.strokeStyle = "rgba(203,213,225,0.35)"; ctx.lineWidth = 3;
+  ctx.setLineDash([22, 18]); ctx.lineDashOffset = roadOffset;
+  [102, 168].forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); });
+  ctx.setLineDash([]);
+  for (let r = 38; r < 232; r += 12) {
+    for (let c = 0; c < 2; c++) {
+      ctx.fillStyle = (Math.floor(r / 12) + c) % 2 === 0 ? "#fff" : "#0b0e1a";
+      ctx.fillRect(FINISH_X + 52 + c * 12, r, 12, 12);
+    }
+  }
+}
+
+function drawCar(car, boost) {
+  if (boost > 0) {
+    const len = boost === 2 ? 48 + Math.random() * 18 : 24 + Math.random() * 12;
+    ctx.fillStyle = boost === 2 ? "#f5b942" : "#38bdf8";
+    ctx.beginPath(); ctx.moveTo(car.x, car.y + 7); ctx.lineTo(car.x - len, car.y + car.height / 2);
+    ctx.lineTo(car.x, car.y + car.height - 7); ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = car.color; ctx.beginPath(); ctx.roundRect(car.x, car.y, car.width, car.height, 8); ctx.fill();
+  ctx.fillStyle = "#0b0e1a"; ctx.fillRect(car.x + 38, car.y + 4, 15, car.height - 8); ctx.fillRect(car.x + 10, car.y + 5, 11, car.height - 10);
+  ctx.fillStyle = car.stripe || "#fff"; ctx.fillRect(car.x + 4, car.y + 14, car.width - 8, 6);
+  ctx.fillStyle = "#94a3b8"; ctx.font = "bold 10px sans-serif"; ctx.fillText(car.label, car.x, car.y - 4);
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (raceState === "racing") {
+    roadOffset += 3; updateMetrics();
+    if (!studyModeToggle.checked) {
+      bots.forEach((b, i) => {
+        if (b.x < FINISH_X) {
+          b.x += (((b.baseWpm * 5) / 60) / currentPrayer.text.length / 60) * TRACK_DIST;
+          if (b.x >= FINISH_X && !finishOrder.includes(`bot${i}`)) finishOrder.push(`bot${i}`);
+        }
+      });
+    }
+  }
+  drawTrack();
+  if (!studyModeToggle.checked) bots.forEach(b => drawCar(b, 0));
+  const eq = CARS.find(c => c.id === equippedCarId) || CARS[0];
+  playerCar.color = eq.color; playerCar.stripe = eq.stripe;
+  drawCar(playerCar, superBoostTimer > 0 ? 2 : (boostTimer > 0 ? 1 : 0));
+  if (boostTimer > 0) boostTimer--; if (superBoostTimer > 0) superBoostTimer--;
+  requestAnimationFrame(gameLoop);
+}
+
+function renderGarage() {
+  document.getElementById("garageGrid").innerHTML = CARS.map(c => {
+    const unl = unlockedCars.includes(c.id), eq = equippedCarId === c.id;
+    const btn = eq ? `<button class="btn btn-gold" disabled>Equipped</button>` :
+      unl ? `<button class="btn" onclick="equipCar('${c.id}')">Equip</button>` :
+      `<button class="btn" onclick="buyCar('${c.id}')">Unlock (${c.cost} GP)</button>`;
+    return `<div class="car-card ${eq ? "equipped" : ""}"><div class="car-swatch" style="background:${c.color}"></div><div class="car-name">${c.name}</div>${btn}</div>`;
+  }).join("");
+}
+
+window.buyCar = id => {
+  const c = CARS.find(x => x.id === id);
+  if (!c || gracePoints < c.cost) return playTone(150, "square", 0.15);
+  gracePoints -= c.cost; unlockedCars.push(id); equippedCarId = id;
+  localStorage.setItem("pr_points", gracePoints); localStorage.setItem("pr_unlocked", JSON.stringify(unlockedCars));
+  localStorage.setItem("pr_equipped", equippedCarId); document.getElementById("gracePointsDisplay").textContent = gracePoints;
+  playTone(700, "triangle", 0.2); renderGarage();
+};
+window.equipCar = id => { equippedCarId = id; localStorage.setItem("pr_equipped", id); playTone(550, "sine", 0.1); renderGarage(); };
+
+classSelect.addEventListener("change", populatePrayers);
+prayerSelect.addEventListener("change", e => selectPrayer(e.target.value));
+document.getElementById("startRaceBtn").addEventListener("click", startCountdown);
+promptBox.addEventListener("focus", () => promptBox.classList.add("focused"));
+promptBox.addEventListener("blur", () => promptBox.classList.remove("focused"));
+document.getElementById("soundBtn").addEventListener("click", e => { soundOn = !soundOn; e.target.textContent = `Sound: ${soundOn ? "ON" : "OFF"}`; });
+document.getElementById("garageBtn").addEventListener("click", () => { renderGarage(); document.getElementById("garageModal").classList.add("open"); });
+document.getElementById("closeGarageBtn").addEventListener("click", () => document.getElementById("garageModal").classList.remove("open"));
+document.getElementById("replayBtn").addEventListener("click", () => { document.getElementById("resultsModal").classList.remove("open"); startCountdown(); });
+document.getElementById("nextPrayerBtn").addEventListener("click", () => {
+  document.getElementById("resultsModal").classList.remove("open");
+  const next = PRAYERS[(PRAYERS.findIndex(p => p.id === currentPrayer.id) + 1) % PRAYERS.length];
+  classSelect.value = next.class; populatePrayers(); prayerSelect.value = next.id; selectPrayer(next.id); startCountdown();
+});
+
+document.getElementById("gracePointsDisplay").textContent = gracePoints;
+populatePrayers(); gameLoop();
+</script>
+</body>
+</html>
