@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrayerRace | Catholic Prayer Racing</title>
+<script src="https://jsdelivr.net"></script>
+<style>
+:root{
+  --bg-dark:#0b0e1a;--panel-bg:#13182e;--panel-border:#263056;
+  --gold:#f5b942;--accent-blue:#38bdf8;--accent-green:#22c55e;
+  --accent-red:#ef4444;--text-main:#f8fafc;--text-muted:#94a3b8;
+  --asphalt:#1c2237;color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{
+  background:radial-gradient(circle at top,#171e3a 0%,var(--bg-dark) 80%);
+  color:var(--text-main);min-height:100vh;display:flex;
+  flex-direction:column;align-items:center;padding:18px;
+}
+.game-wrapper{
+  width:100%;max-width:1060px;display:flex;flex-direction:column;gap:14px
+}
+.top-bar,.setup-bar,.typing-console{
+  background:var(--panel-bg);border:1px solid var(--panel-border);
+  border-radius:14px;padding:14px 20px;box-shadow:0 10px 25px rgba(0,0,0,.4)
+}
+.top-bar{
+  display:flex;flex-wrap:wrap;justify-content:space-between;
+  align-items:center;gap:10px
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-badge{
+  background:linear-gradient(135deg,var(--gold),#d97706);color:#0b0e1a;
+  font-weight:900;padding:6px 12px;border-radius:8px;font-size:.9rem
+}
+.brand h1{font-size:1.25rem;font-weight:800}
+.top-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.points-pill{
+  background:rgba(245,185,66,.12);border:1px solid var(--gold);
+  color:var(--gold);padding:6px 14px;border-radius:20px;font-weight:700
+}
+.btn{
+  background:#1e2646;color:var(--text-main);border-radius:8px;
+  border:1px solid var(--panel-border);padding:8px 13px;
+  font-weight:600;cursor:pointer;transition:.15s;font-size:.88rem
+}
+.btn:hover{border-color:var(--gold);transform:translateY(-1px)}
+.btn-gold{
+  background:linear-gradient(135deg,var(--gold),#e09612);
+  color:#0b0e1a;border:none;font-weight:800
+}
+.setup-bar{
+  display:grid;grid-template-columns:1fr 1.2fr auto;gap:12px;align-items:end
+}
+@media(max-width:820px){.setup-bar{grid-template-columns:1fr}}
+.control-group{display:flex;flex-direction:column;gap:5px}
+.control-group label{
+  font-size:.74rem;text-transform:uppercase;color:var(--text-muted);font-weight:700
+}
+select,input,textarea{
+  background:#0d1224;color:var(--text-main);border-radius:8px;
+  border:1px solid var(--panel-border);padding:9px 12px;
+  font-weight:600;width:100%;font-size:16px
+}
+.mode-actions{display:flex;align-items:center;gap:12px;height:38px}
+.toggle-study{
+  display:flex;align-items:center;gap:6px;font-size:.88rem;
+  color:var(--text-muted);cursor:pointer
+}
+.track-container{
+  position:relative;background:var(--asphalt);
+  border:2px solid var(--panel-border);border-radius:16px;overflow:hidden
+}
+.track-header{
+  background:#101529;padding:10px 20px;display:flex;flex-wrap:wrap;
+  justify-content:space-between;gap:6px;border-bottom:1px solid var(--panel-border)
+}
+.prayer-title-display{font-weight:800;color:var(--gold)}
+.live-metrics{display:flex;gap:18px;font-weight:700;font-size:.92rem}
+.metric span{color:var(--accent-blue)}
+#pixiStage canvas{display:block;width:100%;height:auto}
+.countdown-banner{
+  position:absolute;top:56%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(11,14,26,.92);border:2px solid var(--gold);color:var(--gold);
+  padding:10px 28px;border-radius:12px;font-size:1.45rem;font-weight:900;
+  pointer-events:none;z-index:10
+}
+.countdown-banner.hidden{opacity:0}
+.typing-console{display:flex;flex-direction:column;gap:12px;position:relative}
+.boost-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap
+}
+.boost-label{font-size:.8rem;font-weight:800;color:var(--gold)}
+.boost-bar-wrap{
+  flex:1;min-width:180px;height:10px;background:#0d1224;
+  border-radius:99px;overflow:hidden;border:1px solid var(--panel-border)
+}
+.boost-bar-fill{
+  height:100%;width:0%;transition:width .15s;
+  background:linear-gradient(90deg,var(--accent-blue),var(--gold))
+}
+.boost-ready{box-shadow:0 0 12px var(--gold)}
+.prompt-display{
+  background:#0d1224;border:2px solid var(--panel-border);border-radius:12px;
+  padding:16px 20px;font-size:1.25rem;line-height:1.65;cursor:text;
+  user-select:none;min-height:100px
+}
+.prompt-display.focused{border-color:var(--accent-blue)}
+.prompt-display.error-flash{border-color:var(--accent-red);animation:shake .2s}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  75%{transform:translateX(4px)}
+}
+.char-done{color:var(--accent-green);font-weight:600}
+.char-current{
+  background:var(--accent-blue);color:#0b0e1a;
+  border-radius:3px;padding:0 2px;font-weight:800
+}
+.char-rest{color:#cbd5e1}
+#mobileInput{
+  position:absolute;opacity:0;pointer-events:none;
+  width:1px;height:1px;top:50%;left:50%;font-size:16px
+}
+.console-hint{font-size:.84rem;color:var(--text-muted);text-align:center}
+.overlay{
+  position:fixed;inset:0;background:rgba(7,10,20,.86);display:none;
+  align-items:center;justify-content:center;padding:18px;z-index:50
+}
+.overlay.open{display:flex}
+.modal-card{
+  background:var(--panel-bg);border:2px solid var(--gold);border-radius:16px;
+  padding:24px;max-width:560px;width:100%;text-align:center
+}
+.place-badge{font-size:1.85rem;font-weight:900;color:var(--gold);margin-bottom:4px}
+.modal-sub{color:var(--text-muted);margin-bottom:14px;font-size:.92rem}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-box{
+  background:#0d1224;border:1px solid var(--panel-border);
+  border-radius:10px;padding:12px 8px
+}
+.stat-val{font-size:1.45rem;font-weight:900;color:var(--accent-blue)}
+.stat-box.gold .stat-val{color:var(--gold)}
+.stat-lbl{font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-top:4px}
+.modal-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.garage-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;margin:14px 0
+}
+.car-card{
+  background:#0d1224;border:1px solid var(--panel-border);border-radius:12px;
+  padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center
+}
+.car-card.equipped{border-color:var(--gold);background:rgba(245,185,66,.08)}
+.car-swatch{width:64px;height:26px;border-radius:6px;position:relative}
+.car-swatch::after{
+  content:'';position:absolute;left:4px;right:4px;top:10px;height:6px;background:#fff
+}
+.form-stack{display:flex;flex-direction:column;gap:10px;text-align:left;margin-bottom:14px}
+.status-msg{font-size:.88rem;font-weight:700;min-height:20px;color:var(--accent-green)}
+.status-msg.err{color:var(--accent-red)}
+.lb-list{list-style:none;text-align:left;margin:12px 0;display:flex;flex-direction:column;gap:6px}
+.lb-item{
+  background:#0d1224;padding:8px 14px;border-radius:8px;
+  display:flex;justify-content:space-between;font-size:.9rem
+}
+</style>
+</head>
+<body>
+<div class="game-wrapper">
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">PRAYERRACE</div>
+      <h1>Catholic Prayer Racing</h1>
+    </div>
+    <div class="top-controls">
+      <div class="points-pill">Grace Points: <span id="gracePointsDisplay">0</span></div>
+      <button class="btn" id="teacherBtn">Teacher Link</button>
+      <button class="btn" id="recordsBtn">Sample Racers</button>
+      <button class="btn" id="garageBtn">Garage</button>
+      <button class="btn" id="musicBtn">Music: ON</button>
+      <button class="btn" id="soundBtn">SFX: ON</button>
+    </div>
+  </header>
+
+  <section class="setup-bar">
+    <div class="control-group">
+      <label for="classSelect">1. Racing Class (Length)</label>
+      <select id="classSelect">
+        <option value="1">Class 1: Warm-Up Sprint (Short)</option>
+        <option value="2">Class 2: Devotional Circuit (Medium)</option>
+        <option value="3">Class 3: Liturgical Grand Prix (Long)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="prayerSelect">2. Select Catholic Prayer</label>
+      <select id="prayerSelect"></select>
+    </div>
+    <div class="mode-actions">
+      <label class="toggle-study">
+        <input type="checkbox" id="studyModeToggle"> Study Mode
+      </label>
+      <button class="btn btn-gold" id="startRaceBtn">Start Race</button>
+    </div>
+  </section>
+
+  <section class="track-container">
+    <div class="track-header">
+      <div class="prayer-title-display" id="activePrayerTitle">Sign of the Cross</div>
+      <div class="live-metrics">
+        <div class="metric">SPEED: <span id="wpmDisplay">0</span> WPM</div>
+        <div class="metric">ACCURACY: <span id="accDisplay">100%</span></div>
+      </div>
+    </div>
+    <div id="pixiStage"></div>
+    <div class="countdown-banner" id="countdownBanner">GET READY…</div>
+  </section>
+
+  <section class="typing-console">
+    <div class="boost-row">
+      <div class="boost-label">GRACE BOOST: <span id="boostText">0 / 15 STREAK</span></div>
+      <div class="boost-bar-wrap" id="boostWrap">
+        <div class="boost-bar-fill" id="boostFill"></div>
+      </div>
+    </div>
+    <input type="text" id="mobileInput" autocomplete="off" autocorrect="off"
+      autocapitalize="off" spellcheck="false">
+    <div class="prompt-display" id="promptBox" tabindex="0"></div>
+    <div class="console-hint" id="consoleHint">
+      Tap or click the text box to type. Press <strong>ENTER</strong> when full!
+    </div>
+  </section>
+</div>
+<div class="overlay" id="resultsModal">
+  <div class="modal-card">
+    <div class="place-badge" id="resultPlace">1st Place!</div>
+    <div class="modal-sub" id="resultPrayerName">Prayer Completed</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-val" id="finalWpm">0</div>
+        <div class="stat-lbl">Words / Min</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="finalAcc">100%</div>
+        <div class="stat-lbl">Accuracy</div>
+      </div>
+      <div class="stat-box gold">
+        <div class="stat-val" id="finalPoints">+0</div>
+        <div class="stat-lbl">Grace Points</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="replayBtn">Race Same Prayer</button>
+      <button class="btn btn-gold" id="nextPrayerBtn">Next Prayer →</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="garageModal">
+  <div class="modal-card">
+    <div class="place-badge">Racer Garage</div>
+    <div class="modal-sub">Unlock custom vehicles using your Grace Points.</div>
+    <div class="garage-grid" id="garageGrid"></div>
+    <button class="btn btn-gold" id="closeGarageBtn">Back to Track</button>
+  </div>
+</div>
+
+<div class="overlay" id="teacherModal">
+  <div class="modal-card">
+    <div class="place-badge">Teacher Custom Link</div>
+    <div class="modal-sub">Create a shareable race link with custom text.</div>
+    <div class="form-stack">
+      <input type="text" id="customTitleInput" placeholder="Title (e.g. Psalm 23)">
+      <textarea id="customTextInput" rows="4" placeholder="Paste text here..."></textarea>
+      <input type="text" id="generatedLinkOutput" readonly placeholder="Generated link...">
+      <div class="status-msg" id="linkStatusMsg"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gold" id="generateLinkBtn">Generate & Copy Link</button>
+      <button class="btn" id="closeTeacherBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="recordsModal">
+  <div class="modal-card">
+    <div class="place-badge">Sample Racers</div>
+    <div class="modal-sub">Benchmark speeds for practice comparison.</div>
+    <ul class="lb-list" id="leaderboardList"></ul>
+    <button class="btn btn-gold" id="closeRecordsBtn">Close</button>
+  </div>
+</div>
+<script>
+const PRAYERS = Array.of(
+  {
+    id: "sign", class: 1, title: "Sign of the Cross",
+    text: "In the name of the Father, and of the Son, and of the Holy Spirit. Amen."
+  },
+  {
+    id: "glory", class: 1, title: "Glory Be",
+    text: "Glory be to the Father, and to the Son, and to the Holy Spirit, " +
+      "as it was in the beginning, is now, and ever shall be, world without end. Amen."
+  },
+  {
+    id: "fatima", class: 1, title: "Fatima Prayer",
+    text: "O my Jesus, forgive us our sins, save us from the fires of hell, " +
+      "and lead all souls to Heaven, especially those most in need of Thy mercy. Amen."
+  },
+  {
+    id: "ourfather", class: 2, title: "Our Father",
+    text: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come, " +
+      "thy will be done on earth as it is in heaven. Give us this day our daily bread, " +
+      "and forgive us our trespasses, as we forgive those who trespass against us; " +
+      "and lead us not into temptation, but deliver us from evil. Amen."
+  },
+  {
+    id: "hailmary", class: 2, title: "Hail Mary",
+    text: "Hail, Mary, full of grace, the Lord is with thee. Blessed art thou " +
+      "amongst women and blessed is the fruit of thy womb, Jesus. Holy Mary, " +
+      "Mother of God, pray for us sinners, now and at the hour of our death. Amen."
+  },
+  {
+    id: "hailholyqueen", class: 3, title: "Hail, Holy Queen",
+    text: "Hail, Holy Queen, Mother of Mercy, our life, our sweetness, and our hope. " +
+      "To thee do we cry, poor banished children of Eve. To thee do we send up our sighs, " +
+      "mourning and weeping in this valley of tears. Turn then, most gracious advocate, " +
+      "thine eyes of mercy toward us, and after this our exile, show unto us the blessed " +
+      "fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary. Amen."
+  },
+  {
+    id: "stmichael", class: 3, title: "Prayer to St. Michael",
+    text: "Saint Michael the Archangel, defend us in battle. Be our protection against " +
+      "the wickedness and snares of the devil; may God rebuke him, we humbly pray; " +
+      "and do thou, O Prince of the Heavenly Host, by the power of God, cast into hell " +
+      "Satan and all the evil spirits who prowl about the world seeking the ruin of souls. Amen."
+  }
+);
+
+const CARS = Array.of(
+  { id: "gold", name: "Vatican Gold GT", color: "#f5b942", hex: 0xf5b942, stripeHex: 0xffffff, cost: 0 },
+  { id: "azure", name: "Marian Azure", color: "#38bdf8", hex: 0x38bdf8, stripeHex: 0xf8fafc, cost: 150 },
+  { id: "crimson", name: "Martyr Crimson", color: "#ef4444", hex: 0xef4444, stripeHex: 0xf5b942, cost: 300 },
+  { id: "emerald", name: "Liturgical Emerald", color: "#22c55e", hex: 0x22c55e, stripeHex: 0xffffff, cost: 500 },
+  { id: "royal", name: "Advent Royal", color: "#a855f7", hex: 0xa855f7, stripeHex: 0xf5b942, cost: 800 }
+);
+
+const SAMPLE_RACERS = Array.of(
+  { studentName: "St. Jude Youth Group (Sample)", wpm: 68 },
+  { studentName: "Grade 6 Morning Bell (Sample)", wpm: 52 },
+  { studentName: "Confirmation Prep A (Sample)", wpm: 44 },
+  { studentName: "First Communion Class (Sample)", wpm: 31 }
+);
+
+const LANE_YS = Array.of(104, 161, 218, 275, 332);
+const LANE_DIVIDERS = Array.of(133, 190, 247, 304);
+const placeBonuses = Array.of(60, 40, 25, 15, 10);
+let gracePoints = Number(localStorage.getItem("pr_points"));
+if (!Number.isFinite(gracePoints) || gracePoints < 0) gracePoints = 0;
+
+let unlockedCars = Array.of("gold");
+try {
+  const parsed = JSON.parse(localStorage.getItem("pr_unlocked"));
+  if (Array.isArray(parsed) && parsed.length > 0) unlockedCars = parsed;
+} catch (e) { unlockedCars = Array.of("gold"); }
+
+let equippedCarId = localStorage.getItem("pr_equipped") || "gold";
+if (!CARS.some(c => c.id === equippedCarId)) equippedCarId = "gold";
+
+function normalizeText(str) {
+  return String(str || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-").replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ").trim();
+}
+
+function encodeTeacherPayload(title, text) {
+  const json = JSON.stringify({ t: normalizeText(title), p: normalizeText(text) });
+  const bytes = new TextEncoder().encode(json);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes.at(i));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeTeacherPayload(raw) {
+  let b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes.set(Array.of(bin.charCodeAt(i)), i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+let customPrayerActive = null;
+(function checkTeacherLink() {
+  const raw = new URLSearchParams(window.location.search).get("race");
+  if (!raw) return;
+  try {
+    const decoded = decodeTeacherPayload(raw);
+    const title = decoded.t || decoded.title;
+    const text = decoded.p || decoded.text;
+    if (title && text) {
+      customPrayerActive = {
+        id: "custom", class: 1,
+        title: normalizeText(title).slice(0, 80),
+        text: normalizeText(text).slice(0, 1500)
+      };
+    }
+  } catch (e) { console.warn("Invalid teacher link payload"); }
+})();
+let soundOn = true, musicOn = true, audioCtx = null;
+let bgmTimer = null, bgmStep = 0;
+
+function ensureAudio() {
+  if (!audioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new Ctx();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+
+function playTone(freq, type = "sine", dur = 0.08, vol = 0.08) {
+  if (!soundOn) return;
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + dur);
+}
+
+const BASS_SEQ = Array.of(
+  110, 110, 220, 110, 130.81, 130.81, 146.83, 146.83,
+  164.81, 164.81, 146.83, 130.81, 110, 110, 98, 98
+);
+const LEAD_SEQ = Array.of(
+  440, 0, 523.25, 0, 659.25, 587.33, 523.25, 0,
+  587.33, 0, 659.25, 783.99, 659.25, 0, 523.25, 493.88
+);
+
+function startRacingMusic() {
+  if (!musicOn || bgmTimer) return;
+  ensureAudio();
+  bgmStep = 0;
+  bgmTimer = setInterval(() => {
+    if (!musicOn || raceState !== "racing") return;
+    const now = audioCtx.currentTime;
+
+    const bFreq = BASS_SEQ.at(bgmStep % BASS_SEQ.length);
+    const bOsc = audioCtx.createOscillator(), bGain = audioCtx.createGain();
+    bOsc.type = "sawtooth"; bOsc.frequency.setValueAtTime(bFreq, now);
+    bGain.gain.setValueAtTime(0.032, now);
+    bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    bOsc.connect(bGain); bGain.connect(audioCtx.destination);
+    bOsc.start(now); bOsc.stop(now + 0.13);
+
+    const lFreq = LEAD_SEQ.at(bgmStep % LEAD_SEQ.length);
+    if (lFreq > 0) {
+      const lOsc = audioCtx.createOscillator(), lGain = audioCtx.createGain();
+      lOsc.type = "triangle"; lOsc.frequency.setValueAtTime(lFreq, now);
+      lGain.gain.setValueAtTime(0.035, now);
+      lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      lOsc.connect(lGain); lGain.connect(audioCtx.destination);
+      lOsc.start(now); lOsc.stop(now + 0.15);
+    }
+
+    if (bgmStep % 2 === 1) {
+      const hOsc = audioCtx.createOscillator(), hGain = audioCtx.createGain();
+      hOsc.type = "square"; hOsc.frequency.setValueAtTime(1400, now);
+      hGain.gain.setValueAtTime(0.012, now);
+      hGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      hOsc.connect(hGain); hGain.connect(audioCtx.destination);
+      hOsc.start(now); hOsc.stop(now + 0.035);
+    }
+    bgmStep++;
+  }, 115);
+}
+
+function stopRacingMusic() {
+  clearInterval(bgmTimer);
+  bgmTimer = null;
+}
+
+const START_X = 75, FINISH_X = 890, TRACK_DIST = FINISH_X - START_X;
+const HAS_PIXI = typeof window.PIXI !== "undefined";
+const stageHost = document.getElementById("pixiStage");
+
+let app = null, fallbackCanvas = null, fctx = null, dynamicRoadGfx = null;
+
+if (HAS_PIXI) {
+  app = new PIXI.Application({
+    width: 1000, height: 390, backgroundColor: 0x1c2237, antialias: true
+  });
+  stageHost.appendChild(app.view);
+
+  const trackLayer = new PIXI.Container();
+  const speedLinesLayer = new PIXI.Container();
+  const carsLayer = new PIXI.Container();
+  app.stage.addChild(trackLayer, speedLinesLayer, carsLayer);
+
+  const roadBg = new PIXI.Graphics();
+  roadBg.beginFill(0x14532d).drawRect(0, 0, 1000, 70).drawRect(0, 366, 1000, 24).endFill();
+  roadBg.beginFill(0x1c2237).drawRect(0, 76, 1000, 284).endFill();
+  trackLayer.addChild(roadBg);
+
+  const finishGfx = new PIXI.Graphics();
+  for (let r = 76; r < 360; r += 12) {
+    for (let c = 0; c < 2; c++) {
+      const w = (Math.floor((r - 76) / 12) + c) % 2 === 0;
+      finishGfx.beginFill(w ? 0xffffff : 0x0b0e1a).drawRect(FINISH_X + 52 + c * 12, r, 12, 12).endFill();
+    }
+  }
+  trackLayer.addChild(finishGfx);
+  dynamicRoadGfx = new PIXI.Graphics();
+  trackLayer.addChild(dynamicRoadGfx);
+
+  window._pixiSpeedLines = Array.of();
+  for (let i = 0; i < 16; i++) {
+    const line = new PIXI.Graphics();
+    line.beginFill(0x38bdf8, 0.25).drawRect(0, 0, 55 + Math.random() * 60, 2).endFill();
+    line.x = Math.random() * 1000; line.y = 82 + Math.random() * 270;
+    speedLinesLayer.addChild(line); window._pixiSpeedLines.push(line);
+  }
+  window._pixiCarsLayer = carsLayer;
+} else {
+  fallbackCanvas = document.createElement("canvas");
+  fallbackCanvas.width = 1000; fallbackCanvas.height = 390;
+  stageHost.appendChild(fallbackCanvas); fctx = fallbackCanvas.getContext("2d");
+}
+
+const offlineSpeedLines = Array.from({ length: 16 }, () => ({
+  x: Math.random() * 1000, y: 82 + Math.random() * 270, w: 55 + Math.random() * 60
+}));
+
+function createCarVisual(labelText, bodyCss, bodyHex, stripeCss, stripeHex) {
+  if (!HAS_PIXI) {
+    return {
+      label: labelText, color: bodyCss, stripe: stripeCss,
+      x: START_X, y: 0, rotation: 0, visible: true, flameMode: 0,
+      repaint(bHex, sHex, bCss, sCss) { this.color = bCss || this.color; this.stripe = sCss || this.stripe; }
+    };
+  }
+  const root = new PIXI.Container();
+  const flame = new PIXI.Graphics(); flame.visible = false; root.addChild(flame);
+  const chassis = new PIXI.Graphics(); root.addChild(chassis);
+  const tag = new PIXI.Text(labelText, { fontFamily: "sans-serif", fontSize: 11, fontWeight: "bold", fill: 0xf8fafc });
+  tag.y = -17; root.addChild(tag);
+
+  function repaint(bHex, sHex) {
+    chassis.clear();
+    // Drop shadow & Headlight cones
+    chassis.beginFill(0x000000, 0.35).drawRoundedRect(2, 4, 72, 32, 10).endFill();
+    chassis.beginFill(0xfef08a, 0.14).moveTo(70, 6).lineTo(135, -4).lineTo(135, 16).closePath().endFill();
+    chassis.beginFill(0xfef08a, 0.14).moveTo(70, 28).lineTo(135, 18).lineTo(135, 38).closePath().endFill();
+    // 4 Wide Racing Slicks
+    chassis.beginFill(0x090d16).drawRoundedRect(12, -3, 16, 6, 2).drawRoundedRect(46, -3, 16, 6, 2)
+      .drawRoundedRect(12, 31, 16, 6, 2).drawRoundedRect(46, 31, 16, 6, 2).endFill();
+    // Aerodynamic Tapered GT Body
+    chassis.beginFill(bHex).moveTo(4, 4).lineTo(52, 2).lineTo(74, 9).lineTo(74, 25).lineTo(52, 32).lineTo(4, 30).closePath().endFill();
+    // Twin Racing Stripes & Hood Vent
+    chassis.beginFill(sHex, 0.9).drawRect(10, 12, 58, 3).drawRect(10, 19, 58, 3).endFill();
+    // Wraparound Tinted Cockpit & Rear Glass
+    chassis.beginFill(0x0f172a).moveTo(34, 6).lineTo(52, 8).lineTo(52, 26).lineTo(34, 28).closePath().endFill();
+    chassis.beginFill(0x38bdf8, 0.35).moveTo(44, 8).lineTo(51, 9).lineTo(51, 25).lineTo(44, 26).closePath().endFill();
+    chassis.beginFill(0x0f172a).drawRoundedRect(14, 8, 12, 18, 3).endFill();
+    // Carbon Rear Wing & Taillights
+    chassis.beginFill(0x090d16).drawRoundedRect(-2, 1, 7, 32, 2).endFill();
+    chassis.beginFill(0xef4444).drawRect(0, 4, 2, 6).drawRect(0, 24, 2, 6).endFill();
+    chassis.beginFill(0xffffff).drawRect(72, 9, 3, 5).drawRect(72, 20, 3, 5).endFill();
+  }
+  repaint(bodyHex, stripeHex);
+  window._pixiCarsLayer.addChild(root);
+  return { root, flame, chassis, repaint };
+}
+
+const playerEntity = {
+  x: START_X, targetX: START_X, vx: 0, baseY: LANE_YS.at(2) - 17, phase: 0,
+  sprite: createCarVisual("YOU", "#f5b942", 0xf5b942, "#ffffff", 0xffffff)
+};
+const botSpecs = Array.of(
+  { lane: 0, css: "#ec4899", hex: 0xec4899, stripe: 0xffffff, baseWpm: 28, label: "Jain" },
+  { lane: 1, css: "#8b5cf6", hex: 0x8b5cf6, stripe: 0xcbd5e1, baseWpm: 38, label: "Anna" },
+  { lane: 3, css: "#14b8a6", hex: 0x14b8a6, stripe: 0xffffff, baseWpm: 48, label: "BOT" },
+  { lane: 4, css: "#f97316", hex: 0xf97316, stripe: 0xffffff, baseWpm: 58, label: "Jayson" }
+);
+const botEntities = botSpecs.map((spec, idx) => ({
+  x: START_X, vx: 0, baseY: LANE_YS.at(spec.lane) - 17, baseWpm: spec.baseWpm, phase: idx * 1.4, surgeTimer: 0,
+  sprite: createCarVisual(spec.label, spec.css, spec.hex, "#ffffff", spec.stripe)
+}));
+
+
+let currentPrayer = customPrayerActive || PRAYERS.at(0);
+let typedIndex = 0, manuallyTypedCount = 0;
+let totalKeystrokes = 0, correctKeystrokes = 0;
+let boostStreak = 0, boostsUsedThisRace = 0;
+const BOOST_MAX = 15, MAX_BOOSTS_PER_RACE = 2;
+
+let raceState = "idle", startTime = 0, countdownTimer = null;
+let boostTimer = 0, superBoostTimer = 0, roadScroll = 0, finishOrder = Array.of();
+
+const classSelect = document.getElementById("classSelect");
+const prayerSelect = document.getElementById("prayerSelect");
+const studyModeToggle = document.getElementById("studyModeToggle");
+const promptBox = document.getElementById("promptBox");
+const mobileInput = document.getElementById("mobileInput");
+const countdownBanner = document.getElementById("countdownBanner");
+
+function populatePrayers() {
+  prayerSelect.innerHTML = "";
+  if (customPrayerActive) {
+    const opt = document.createElement("option");
+    opt.value = "custom";
+    opt.textContent = `⭐ ${customPrayerActive.title} (Teacher Link)`;
+    prayerSelect.appendChild(opt);
+    selectPrayer("custom");
+    return;
+  }
+  const filtered = PRAYERS.filter(p => p.class === Number(classSelect.value));
+  filtered.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.title;
+    prayerSelect.appendChild(opt);
+  });
+  if (filtered.length > 0) selectPrayer(filtered.at(0).id);
+}
+
+function selectPrayer(id) {
+  if (id === "custom" && customPrayerActive) currentPrayer = customPrayerActive;
+  else currentPrayer = PRAYERS.find(p => p.id === id) || PRAYERS.at(0);
+  document.getElementById("activePrayerTitle").textContent = currentPrayer.title;
+  resetRace();
+}
+
+function focusTypingTarget() {
+  mobileInput.focus({ preventScroll: true });
+  promptBox.classList.add("focused");
+}
+
+function resetRace() {
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+  stopRacingMusic();
+  raceState = "idle";
+  typedIndex = 0;
+  manuallyTypedCount = 0;
+  totalKeystrokes = 0;
+  correctKeystrokes = 0;
+  boostStreak = 0;
+  boostsUsedThisRace = 0;
+  boostTimer = 0;
+  superBoostTimer = 0;
+  finishOrder = Array.of();
+
+  playerEntity.x = START_X;
+  playerEntity.targetX = START_X;
+  playerEntity.vx = 0;
+  botEntities.forEach(b => { b.x = START_X; b.vx = 0; b.surgeTimer = 0; });
+
+  document.getElementById("wpmDisplay").textContent = "0";
+  document.getElementById("accDisplay").textContent = "100%";
+  countdownBanner.textContent = "GET READY…";
+  countdownBanner.classList.remove("hidden");
+  updateBoostUI();
+  renderPrompt();
+}
+
+function startCountdown() {
+  resetRace();
+  raceState = "countdown";
+  focusTypingTarget();
+  let count = 3;
+  countdownBanner.textContent = `STARTING IN ${count}…`;
+  playTone(440, "triangle", 0.12);
+
+  countdownTimer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      countdownBanner.textContent = `STARTING IN ${count}…`;
+      playTone(440, "triangle", 0.12);
+    } else {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      countdownBanner.textContent = "GO!";
+      playTone(880, "triangle", 0.25);
+      raceState = "racing";
+      startTime = performance.now();
+      startRacingMusic();
+      focusTypingTarget();
+      setTimeout(() => countdownBanner.classList.add("hidden"), 600);
+    }
+  }, 750);
+}
+
+function renderPrompt() {
+  const t = currentPrayer.text;
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const cur = esc(t.charAt(typedIndex) || "");
+  promptBox.innerHTML =
+    `<span class="char-done">${esc(t.slice(0, typedIndex))}</span>` +
+    `<span class="char-current">${cur === " " ? "&nbsp;" : cur}</span>` +
+    `<span class="char-rest">${esc(t.slice(typedIndex + 1))}</span>`;
+}
+function updateBoostUI() {
+  const label = document.getElementById("boostText");
+  const hint = document.getElementById("consoleHint");
+  const rem = MAX_BOOSTS_PER_RACE - boostsUsedThisRace;
+
+  if (rem <= 0) {
+    label.textContent = `MAX BOOSTS USED (${MAX_BOOSTS_PER_RACE}/${MAX_BOOSTS_PER_RACE})`;
+    document.getElementById("boostFill").style.width = "0%";
+    document.getElementById("boostWrap").classList.remove("boost-ready");
+    hint.innerHTML = "All Grace Boosts used for this race.";
+    return;
+  }
+  label.textContent = boostStreak >= BOOST_MAX
+    ? "READY! PRESS ENTER"
+    : `${boostStreak} / ${BOOST_MAX} STREAK`;
+  const pct = Math.min(100, (boostStreak / BOOST_MAX) * 100);
+  document.getElementById("boostFill").style.width = `${pct}%`;
+  document.getElementById("boostWrap").classList.toggle("boost-ready", boostStreak >= BOOST_MAX);
+  hint.innerHTML = `Press <strong>ENTER</strong> when full (${rem} left) to skip a word!`;
+}
+
+function calculateLiveWpm() {
+  const min = (performance.now() - startTime) / 60000;
+  if (min <= 0.005) return 0;
+  return Math.round((manuallyTypedCount / 5) / min);
+}
+
+function updateMetrics() {
+  if (raceState !== "racing") return;
+  document.getElementById("wpmDisplay").textContent = calculateLiveWpm();
+  const acc = totalKeystrokes > 0
+    ? Math.round((correctKeystrokes / totalKeystrokes) * 100) : 100;
+  document.getElementById("accDisplay").textContent = `${acc}%`;
+}
+
+function checkFinish() {
+  if (typedIndex < currentPrayer.text.length || raceState !== "racing") return;
+  raceState = "finished";
+  stopRacingMusic();
+  mobileInput.blur();
+  if (!finishOrder.includes("player")) finishOrder.push("player");
+
+  const wpm = calculateLiveWpm();
+  const acc = totalKeystrokes > 0
+    ? Math.round((correctKeystrokes / totalKeystrokes) * 100) : 100;
+  const placeIdx = finishOrder.indexOf("player");
+  const labels = Array.of("1st Place!", "2nd Place!", "3rd Place!", "4th Place!", "5th Place!");
+
+  const bonus = studyModeToggle.checked ? 0 : (placeBonuses.at(placeIdx) || 10);
+  const baseReward = (currentPrayer.class || 1) * 40;
+  const earned = acc >= 80 ? Math.round((baseReward + bonus + wpm) * (acc / 100)) : 0;
+
+  gracePoints += earned;
+  localStorage.setItem("pr_points", gracePoints);
+  document.getElementById("gracePointsDisplay").textContent = gracePoints;
+
+  document.getElementById("resultPlace").textContent =
+    studyModeToggle.checked ? "Study Complete!" : (labels.at(placeIdx) || "Finished!");
+  document.getElementById("resultPrayerName").textContent =
+    acc >= 80 ? currentPrayer.title : `${currentPrayer.title} (80%+ accuracy needed)`;
+  document.getElementById("finalWpm").textContent = wpm;
+  document.getElementById("finalAcc").textContent = `${acc}%`;
+  document.getElementById("finalPoints").textContent = `+${earned}`;
+  document.getElementById("resultsModal").classList.add("open");
+}
+
+function handleCharacterInput(char) {
+  if (raceState === "idle") {
+    raceState = "racing";
+    startTime = performance.now();
+    startRacingMusic();
+    countdownBanner.classList.add("hidden");
+  }
+  if (raceState !== "racing") return;
+
+  totalKeystrokes++;
+  if (char === currentPrayer.text.charAt(typedIndex)) {
+    typedIndex++; manuallyTypedCount++; correctKeystrokes++;
+    if (boostsUsedThisRace < MAX_BOOSTS_PER_RACE) {
+      boostStreak = Math.min(BOOST_MAX, boostStreak + 1);
+    }
+    boostTimer = 0.16;
+    playTone(520 + boostStreak * 12, "sine", 0.05, 0.05);
+    playerEntity.targetX = START_X + (typedIndex / currentPrayer.text.length) * TRACK_DIST;
+    updateBoostUI(); renderPrompt(); updateMetrics(); checkFinish();
+  } else {
+    boostStreak = 0; updateBoostUI();
+    playTone(160, "square", 0.09, 0.05);
+    promptBox.classList.remove("error-flash");
+    void promptBox.offsetWidth;
+    promptBox.classList.add("error-flash");
+  }
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (document.querySelector(".overlay.open")) return;
+  if (e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+
+  const canBoost = raceState === "racing" &&
+    boostStreak >= BOOST_MAX && boostsUsedThisRace < MAX_BOOSTS_PER_RACE;
+
+  if (e.key === "Enter" && canBoost) {
+    e.preventDefault();
+    const txt = currentPrayer.text;
+    while (typedIndex < txt.length && txt.charAt(typedIndex) === " ") typedIndex++;
+    while (typedIndex < txt.length && txt.charAt(typedIndex) !== " ") typedIndex++;
+    while (typedIndex < txt.length && txt.charAt(typedIndex) === " ") typedIndex++;
+
+    boostStreak = 0; boostsUsedThisRace++; superBoostTimer = 0.45;
+    playTone(660, "sawtooth", 0.22, 0.1);
+    playerEntity.targetX = START_X + (typedIndex / txt.length) * TRACK_DIST;
+    updateBoostUI(); renderPrompt(); checkFinish();
+    return;
+  }
+
+  const activeOk = document.activeElement === promptBox ||
+    document.activeElement === mobileInput;
+  if (e.key.length === 1 && activeOk) {
+    e.preventDefault();
+    handleCharacterInput(e.key);
+  }
+});
+
+promptBox.addEventListener("click", focusTypingTarget);
+mobileInput.addEventListener("focus", () => promptBox.classList.add("focused"));
+mobileInput.addEventListener("blur", () => promptBox.classList.remove("focused"));
+mobileInput.addEventListener("input", (e) => {
+  const val = e.target.value;
+  if (val) {
+    for (const ch of val) handleCharacterInput(ch);
+    e.target.value = "";
+  }
+});
+
+
+function drawOfflineCar(car) {
+  if (!car.visible) return;
+  fctx.save();
+  fctx.translate(car.x, car.y);
+  if (car.rotation) fctx.rotate(car.rotation);
+
+  // Dual-core Nitro Flame
+  if (car.flameMode > 0) {
+    const isSuper = car.flameMode === 2;
+    const len = isSuper ? 54 + Math.random() * 20 : 28 + Math.random() * 14;
+    fctx.fillStyle = isSuper ? "#f5b942" : "#38bdf8";
+    fctx.beginPath(); fctx.moveTo(0, 7); fctx.lineTo(-len, 17); fctx.lineTo(0, 27); fctx.closePath(); fctx.fill();
+    fctx.fillStyle = "#ffffff";
+    fctx.beginPath(); fctx.moveTo(0, 12); fctx.lineTo(-len * 0.55, 17); fctx.lineTo(0, 22); fctx.closePath(); fctx.fill();
+  }
+
+  // Ground Shadow & Headlight Cones
+  fctx.fillStyle = "rgba(0,0,0,0.35)";
+  fctx.fillRect(2, 4, 72, 32);
+  fctx.fillStyle = "rgba(254, 240, 138, 0.14)";
+  fctx.beginPath(); fctx.moveTo(70, 6); fctx.lineTo(135, -4); fctx.lineTo(135, 16); fctx.closePath(); fctx.fill();
+  fctx.beginPath(); fctx.moveTo(70, 28); fctx.lineTo(135, 18); fctx.lineTo(135, 38); fctx.closePath(); fctx.fill();
+
+  // 4 Racing Slicks
+  fctx.fillStyle = "#090d16";
+  fctx.fillRect(12, -3, 16, 6); fctx.fillRect(46, -3, 16, 6);
+  fctx.fillRect(12, 31, 16, 6); fctx.fillRect(46, 31, 16, 6);
+
+  // Aerodynamic Tapered GT Body
+  fctx.fillStyle = car.color;
+  fctx.beginPath();
+  fctx.moveTo(4, 4); fctx.lineTo(52, 2); fctx.lineTo(74, 9);
+  fctx.lineTo(74, 25); fctx.lineTo(52, 32); fctx.lineTo(4, 30);
+  fctx.closePath(); fctx.fill();
+
+  // Twin Racing Stripes
+  fctx.fillStyle = car.stripe || "#ffffff";
+  fctx.fillRect(10, 12, 58, 3); fctx.fillRect(10, 19, 58, 3);
+
+  // Wraparound Tinted Cockpit & Glass Reflection
+  fctx.fillStyle = "#0f172a";
+  fctx.beginPath(); fctx.moveTo(34, 6); fctx.lineTo(52, 8); fctx.lineTo(52, 26); fctx.lineTo(34, 28); fctx.closePath(); fctx.fill();
+  fctx.fillStyle = "rgba(56, 189, 248, 0.35)";
+  fctx.beginPath(); fctx.moveTo(44, 8); fctx.lineTo(51, 9); fctx.lineTo(51, 25); fctx.lineTo(44, 26); fctx.closePath(); fctx.fill();
+  fctx.fillRect(14, 8, 12, 18);
+
+  // Carbon Rear Spoiler, Taillights & LED Headlights
+  fctx.fillStyle = "#090d16"; fctx.fillRect(-2, 1, 7, 32);
+  fctx.fillStyle = "#ef4444"; fctx.fillRect(0, 4, 2, 6); fctx.fillRect(0, 24, 2, 6);
+  fctx.fillStyle = "#ffffff"; fctx.fillRect(72, 9, 3, 5); fctx.fillRect(72, 20, 3, 5);
+
+  fctx.fillStyle = "#f8fafc";
+  fctx.font = "bold 11px sans-serif";
+  fctx.fillText(car.label, 4, -6);
+  fctx.restore();
+}
+
+function renderOfflineFrame() {
+  fctx.clearRect(0, 0, 1000, 390);
+  fctx.fillStyle = "#14532d";
+  fctx.fillRect(0, 0, 1000, 70); fctx.fillRect(0, 366, 1000, 24);
+
+  // Stadium Trackside Banners along top grass
+  const bannerScroll = roadScroll % 160;
+  for (let bx = -160; bx < 1160; bx += 160) {
+    fctx.fillStyle = "#1e293b";
+    fctx.fillRect(bx - bannerScroll, 38, 140, 22);
+    fctx.fillStyle = "#f5b942";
+    fctx.font = "bold 10px sans-serif";
+    fctx.fillText("PRAYERRACE GP", bx - bannerScroll + 26, 53);
+  }
+
+  const scrollMod = roadScroll % 40, tileOffset = Math.floor(roadScroll / 40);
+  for (let i = -1; i < 28; i++) {
+    const sx = i * 40 - scrollMod;
+    fctx.fillStyle = (i + tileOffset) % 2 === 0 ? "#f5b942" : "#f8fafc";
+    fctx.fillRect(sx, 70, 40, 6); fctx.fillRect(sx, 360, 40, 6);
+  }
+
+  fctx.fillStyle = "#1c2237"; fctx.fillRect(0, 76, 1000, 284);
+  const dashMod = roadScroll % 35;
+  fctx.fillStyle = "rgba(203, 213, 225, 0.35)";
+  LANE_DIVIDERS.forEach(y => {
+    for (let dx = -35; dx < 1040; dx += 35) fctx.fillRect(dx - dashMod, y - 1.5, 20, 3);
+  });
+
+  for (let r = 76; r < 360; r += 12) {
+    for (let c = 0; c < 2; c++) {
+      fctx.fillStyle = ((Math.floor((r - 76) / 12) + c) % 2 === 0) ? "#fff" : "#0b0e1a";
+      fctx.fillRect(FINISH_X + 52 + c * 12, r, 12, 12);
+    }
+  }
+
+  fctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+  offlineSpeedLines.forEach(l => fctx.fillRect(l.x, l.y, l.w, 2));
+  botEntities.forEach(b => drawOfflineCar(b.sprite));
+  drawOfflineCar(playerEntity.sprite);
+}
+
+
+function stepPhysics(dt) {
+  const eq = CARS.find(c => c.id === equippedCarId) || CARS.at(0);
+  playerEntity.sprite.repaint(eq.hex, eq.stripeHex, eq.color, "#ffffff");
+
+  const springK = 14, damping = 0.82;
+  const accel = (playerEntity.targetX - playerEntity.x) * springK;
+  playerEntity.vx = (playerEntity.vx + accel * dt) * damping;
+  playerEntity.x += playerEntity.vx * dt * 10;
+
+  if (raceState === "racing") {
+    roadScroll += (210 + Math.abs(playerEntity.vx) * 6) * dt;
+    updateMetrics();
+
+    const lines = HAS_PIXI ? window._pixiSpeedLines : offlineSpeedLines;
+    lines.forEach(line => {
+      line.x -= (480 + Math.abs(playerEntity.vx) * 14) * dt;
+      if (line.x < -100) {
+        line.x = 1050;
+        line.y = 82 + Math.random() * 270;
+      }
+    });
+
+    const isStudy = studyModeToggle.checked;
+    botEntities.forEach((b, i) => {
+      if (HAS_PIXI) b.sprite.root.visible = !isStudy;
+      else b.sprite.visible = !isStudy;
+
+      if (!isStudy && b.x < FINISH_X) {
+        b.surgeTimer -= dt;
+        if (b.surgeTimer <= 0) {
+          b.surgeTimer = 0.8 + Math.random() * 1.4;
+          b.surgeFactor = 0.85 + Math.random() * 0.32;
+        }
+        const effWpm = b.baseWpm * (b.surgeFactor || 1);
+        b.vx = (((effWpm * 5) / 60) / currentPrayer.text.length) * TRACK_DIST;
+        b.x += b.vx * dt;
+        b.phase += dt * (3.2 + i * 0.4);
+        if (b.x >= FINISH_X && !finishOrder.includes(`bot${i}`)) {
+          finishOrder.push(`bot${i}`);
+        }
+      }
+    });
+  } else {
+    const vis = !studyModeToggle.checked;
+    botEntities.forEach(b => {
+      if (HAS_PIXI) b.sprite.root.visible = vis;
+      else b.sprite.visible = vis;
+    });
+  }
+
+  renderActiveEngine(dt);
+
+  if (boostTimer > 0) boostTimer = Math.max(0, boostTimer - dt);
+  if (superBoostTimer > 0) superBoostTimer = Math.max(0, superBoostTimer - dt);
+}
+function renderActiveEngine(dt) {
+  playerEntity.phase += dt * 4.5;
+  const pWeave = raceState === "racing" ? Math.sin(playerEntity.phase) * 1.8 : 0;
+  const pRot = Math.max(-0.04, Math.min(0.04, playerEntity.vx * 0.0012));
+  const pFlame = superBoostTimer > 0 ? 2 : (boostTimer > 0 ? 1 : 0);
+
+  if (HAS_PIXI) {
+    dynamicRoadGfx.clear();
+    const scrollMod = roadScroll % 40;
+    const tileOffset = Math.floor(roadScroll / 40);
+    for (let i = -1; i < 28; i++) {
+      const sx = i * 40 - scrollMod;
+      dynamicRoadGfx.beginFill((i + tileOffset) % 2 === 0 ? 0xf5b942 : 0xf8fafc);
+      dynamicRoadGfx.drawRect(sx, 70, 40, 6).drawRect(sx, 360, 40, 6).endFill();
+    }
+    const dashMod = roadScroll % 35;
+    dynamicRoadGfx.beginFill(0xcbd5e1, 0.35);
+    LANE_DIVIDERS.forEach(y => {
+      for (let dx = -35; dx < 1040; dx += 35) {
+        dynamicRoadGfx.drawRect(dx - dashMod, y - 1.5, 20, 3);
+      }
+    });
+    dynamicRoadGfx.endFill();
+
+    playerEntity.sprite.root.x = playerEntity.x;
+    playerEntity.sprite.root.y = playerEntity.baseY + pWeave;
+    playerEntity.sprite.root.rotation = pRot;
+
+    const flame = playerEntity.sprite.flame;
+    if (pFlame > 0) {
+      flame.visible = true;
+      flame.clear();
+      const len = pFlame === 2 ? 48 + Math.random() * 18 : 24 + Math.random() * 12;
+      flame.beginFill(pFlame === 2 ? 0xf5b942 : 0x38bdf8);
+      flame.moveTo(0, 7).lineTo(-len, 17).lineTo(0, 27).closePath().endFill();
+    } else {
+      flame.visible = false;
+    }
+
+    botEntities.forEach(b => {
+      b.sprite.root.x = b.x;
+      const bWeave = raceState === "racing" ? Math.sin(b.phase) * 2.2 : 0;
+      b.sprite.root.y = b.baseY + bWeave;
+      const bFlame = b.sprite.flame;
+      const surging = raceState === "racing" && (b.surgeFactor || 1) > 1.08;
+      if (surging && b.x < FINISH_X) {
+        bFlame.visible = true;
+        bFlame.clear();
+        bFlame.beginFill(0x38bdf8)
+          .moveTo(0, 8).lineTo(-18 - Math.random() * 8, 17)
+          .lineTo(0, 26).closePath().endFill();
+      } else {
+        bFlame.visible = false;
+      }
+    });
+  } else {
+    playerEntity.sprite.x = playerEntity.x;
+    playerEntity.sprite.y = playerEntity.baseY + pWeave;
+    playerEntity.sprite.rotation = pRot;
+    playerEntity.sprite.flameMode = pFlame;
+
+    botEntities.forEach(b => {
+      b.sprite.x = b.x;
+      const bWeave = raceState === "racing" ? Math.sin(b.phase) * 2.2 : 0;
+      b.sprite.y = b.baseY + bWeave;
+      const surging = raceState === "racing" && (b.surgeFactor || 1) > 1.08;
+      b.sprite.flameMode = (surging && b.x < FINISH_X) ? 1 : 0;
+    });
+    renderOfflineFrame();
+  }
+}
+
+if (HAS_PIXI) {
+  app.ticker.add(() => stepPhysics(Math.min(0.05, app.ticker.deltaMS / 1000)));
+} else {
+  let lastT = performance.now();
+  (function fallbackLoop(now = performance.now()) {
+    const dt = Math.min(0.05, Math.max(0, (now - lastT) / 1000));
+    lastT = now;
+    stepPhysics(dt);
+    requestAnimationFrame(fallbackLoop);
+  })();
+}
+function renderGarage() {
+  document.getElementById("garageGrid").innerHTML = CARS.map(c => {
+    const unl = unlockedCars.includes(c.id);
+    const eq = equippedCarId === c.id;
+    const btn = eq
+      ? `<button class="btn btn-gold" disabled>Equipped</button>`
+      : unl
+        ? `<button class="btn" onclick="equipCar('${c.id}')">Equip</button>`
+        : `<button class="btn" onclick="buyCar('${c.id}')">Unlock (${c.cost} GP)</button>`;
+    return `<div class="car-card ${eq ? "equipped" : ""}">` +
+      `<div class="car-swatch" style="background:${c.color}"></div>` +
+      `<div style="font-weight:800;font-size:.9rem">${c.name}</div>${btn}</div>`;
+  }).join("");
+}
+
+window.buyCar = id => {
+  const c = CARS.find(x => x.id === id);
+  if (!c || gracePoints < c.cost) return playTone(150, "square", 0.15);
+  gracePoints -= c.cost;
+  unlockedCars.push(id);
+  equippedCarId = id;
+  localStorage.setItem("pr_points", gracePoints);
+  localStorage.setItem("pr_unlocked", JSON.stringify(unlockedCars));
+  localStorage.setItem("pr_equipped", equippedCarId);
+  document.getElementById("gracePointsDisplay").textContent = gracePoints;
+  playTone(700, "triangle", 0.2);
+  renderGarage();
+};
+
+window.equipCar = id => {
+  equippedCarId = id;
+  localStorage.setItem("pr_equipped", id);
+  playTone(550, "sine", 0.1);
+  renderGarage();
+};
+
+function renderSampleRacers() {
+  const list = document.getElementById("leaderboardList");
+  list.innerHTML = "";
+  SAMPLE_RACERS.forEach((r, idx) => {
+    const li = document.createElement("li");
+    li.className = "lb-item";
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = `#${idx + 1} ${r.studentName}`;
+    const wpmSpan = document.createElement("strong");
+    wpmSpan.textContent = `${r.wpm} WPM`;
+    li.append(nameSpan, wpmSpan);
+    list.appendChild(li);
+  });
+}
+
+classSelect.addEventListener("change", () => {
+  customPrayerActive = null;
+  populatePrayers();
+  focusTypingTarget();
+});
+
+prayerSelect.addEventListener("change", e => {
+  selectPrayer(e.target.value);
+  focusTypingTarget();
+});
+
+studyModeToggle.addEventListener("change", () => {
+  if (raceState === "racing" || raceState === "countdown") focusTypingTarget();
+});
+
+document.getElementById("startRaceBtn").addEventListener("click", startCountdown);
+
+document.getElementById("musicBtn").addEventListener("click", e => {
+  musicOn = !musicOn;
+  e.target.textContent = `Music: ${musicOn ? "ON" : "OFF"}`;
+  if (musicOn && raceState === "racing") startRacingMusic();
+  else stopRacingMusic();
+  if (raceState === "racing" || raceState === "countdown") focusTypingTarget();
+});
+
+document.getElementById("soundBtn").addEventListener("click", e => {
+  soundOn = !soundOn;
+  e.target.textContent = `SFX: ${soundOn ? "ON" : "OFF"}`;
+  if (raceState === "racing" || raceState === "countdown") focusTypingTarget();
+});
+
+document.getElementById("garageBtn").addEventListener("click", () => {
+  renderGarage();
+  document.getElementById("garageModal").classList.add("open");
+});
+
+document.getElementById("closeGarageBtn").addEventListener("click", () => {
+  document.getElementById("garageModal").classList.remove("open");
+  focusTypingTarget();
+});
+
+document.getElementById("recordsBtn").addEventListener("click", () => {
+  renderSampleRacers();
+  document.getElementById("recordsModal").classList.add("open");
+});
+
+document.getElementById("closeRecordsBtn").addEventListener("click", () => {
+  document.getElementById("recordsModal").classList.remove("open");
+  focusTypingTarget();
+});
+
+document.getElementById("teacherBtn").addEventListener("click", () => {
+  document.getElementById("linkStatusMsg").textContent = "";
+  document.getElementById("teacherModal").classList.add("open");
+});
+
+document.getElementById("closeTeacherBtn").addEventListener("click", () => {
+  document.getElementById("teacherModal").classList.remove("open");
+  focusTypingTarget();
+});
+
+document.getElementById("generateLinkBtn").addEventListener("click", () => {
+  const title = document.getElementById("customTitleInput").value;
+  const text = document.getElementById("customTextInput").value;
+  const statusEl = document.getElementById("linkStatusMsg");
+  if (!normalizeText(title) || !normalizeText(text)) {
+    statusEl.className = "status-msg err";
+    statusEl.textContent = "Please enter both a title and prayer text.";
+    return;
+  }
+  const encoded = encodeTeacherPayload(title, text);
+  const base = window.location.href.split("?").at(0).split("#").at(0);
+  const url = `${base}?race=${encoded}`;
+  const out = document.getElementById("generatedLinkOutput");
+  out.value = url;
+  out.select();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      statusEl.className = "status-msg";
+      statusEl.textContent = "Link generated and copied to clipboard!";
+    }).catch(() => {
+      statusEl.className = "status-msg";
+      statusEl.textContent = "Link generated! Press Ctrl+C / Cmd+C to copy.";
+    });
+  } else {
+    statusEl.className = "status-msg";
+    statusEl.textContent = "Link generated! Press Ctrl+C / Cmd+C to copy.";
+  }
+});
+
+document.getElementById("replayBtn").addEventListener("click", () => {
+  document.getElementById("resultsModal").classList.remove("open");
+  startCountdown();
+});
+
+document.getElementById("nextPrayerBtn").addEventListener("click", () => {
+  document.getElementById("resultsModal").classList.remove("open");
+  customPrayerActive = null;
+  const idx = PRAYERS.findIndex(p => p.id === currentPrayer.id);
+  const next = PRAYERS.at((idx === -1 ? 0 : idx + 1) % PRAYERS.length);
+  classSelect.value = next.class;
+  populatePrayers();
+  prayerSelect.value = next.id;
+  selectPrayer(next.id);
+  startCountdown();
+});
+
+document.getElementById("gracePointsDisplay").textContent = gracePoints;
+populatePrayers();
+</script>
+</body>
+</html>
