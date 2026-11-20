@@ -443,6 +443,11 @@
     View Recommended Study Guides &#8594;
   </a>
 </section>
+    <div style="text-align: center; margin-top: 24px;">
+      <button id="musicToggle" style="background: rgba(255, 255, 255, 0.12); color: #fde047; border: 1px solid rgba(253, 224, 71, 0.45); padding: 8px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+        🔊 Music: On
+      </button>
+    </div>
     <footer>
       Select any card above to start playing
     </footer>
@@ -462,6 +467,77 @@
       p.style.animationDelay = (Math.random() * 10) + 's';
       particleContainer.appendChild(p);
     }
+    // Gentle background music: fades in after 6 seconds at low volume with mute toggle
+    let audioCtx = null;
+    let masterGain = null;
+    let isMuted = false;
+    let musicStarted = false;
+    const TARGET_VOLUME = 0.06; // Low background volume (6%)
+    const musicBtn = document.getElementById('musicToggle');
+
+    function startGentleMusic() {
+      if (musicStarted) return;
+      musicStarted = true;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      masterGain.connect(audioCtx.destination);
+
+      // Smooth 3-second fade-in up to low background volume
+      if (!isMuted) {
+        masterGain.gain.exponentialRampToValueAtTime(TARGET_VOLUME, audioCtx.currentTime + 3);
+      }
+
+      // Peaceful ambient chord notes (C major 9th)
+      const notes = [261.63, 329.63, 392.00, 493.88, 587.33];
+      let step = 0;
+
+      setInterval(() => {
+        if (isMuted || !audioCtx || audioCtx.state !== 'running') return;
+        const osc = audioCtx.createOscillator();
+        const noteGain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(notes[step % notes.length], audioCtx.currentTime);
+
+        noteGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.4, audioCtx.currentTime + 0.8);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.2);
+
+        osc.connect(noteGain);
+        noteGain.connect(masterGain);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 3.3);
+        step++;
+      }, 2400);
+    }
+
+    // Start gently after 6 seconds
+    setTimeout(() => {
+      startGentleMusic();
+    }, 6000);
+
+    // Resume audio on first click/tap anywhere (required by modern browsers)
+    document.addEventListener('click', () => {
+      if (audioCtx && audioCtx.state === 'suspended' && !isMuted) {
+        audioCtx.resume();
+      }
+    }, { once: true });
+
+    // Mute / Unmute button toggle
+    musicBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!musicStarted) startGentleMusic();
+      isMuted = !isMuted;
+      if (isMuted) {
+        masterGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        musicBtn.textContent = '🔇 Music: Muted';
+      } else {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        masterGain.gain.exponentialRampToValueAtTime(TARGET_VOLUME, audioCtx.currentTime + 1);
+        musicBtn.textContent = '🔊 Music: On';
+      }
+    });
   </script>
 
 </body>
