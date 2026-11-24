@@ -1,31 +1,31 @@
-const CACHE_NAME = 'catholic-games-v1';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './resources.html',
-  './custom-vocabulary.html',
-  './nav.css',
-  './nav.js',
-  './manifest.json',
-  './icon-512.png',
-  './ch-9-game-1-mind-clear.html',
-  './ch-9-game-2-our-father.html',
-  './ch-9-game-3-lectio-divina-journey.html',
-  './ch-9-game-4-interactive-bible.html',
-  './ch-9-game-5-holy_spirit_gifts-fruits.html',
-  './ch-9-game-6-vocabulary-flash.html'
-];
+const CACHE_NAME = 'catholic-games-auto';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
-  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        // Save a fresh copy of every page/game visited into cache automatically
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // If offline, serve the saved copy from cache
+        return caches.match(event.request);
+      })
   );
 });
