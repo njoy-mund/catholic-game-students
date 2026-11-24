@@ -294,7 +294,21 @@
   <div class="container">
   <header>
       <div class="badge">✨ Interactive Faith Games ✨</div>
-      <h1>Catholic Student Games</h1>
+    
+     <div style="display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px;">
+  <h1 style="margin: 0;">Catholic Student Games</h1>
+
+  <button id="install-app-btn" title="Install Catholic Student Games App" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(250, 204, 21, 0.14); border: 1px solid #facc15; color: #facc15; border-radius: 999px; padding: 6px 14px 6px 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.15s ease;">
+    <img src="icon-512.png" alt="App Icon" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;">
+    <span>Install App</span>
+  </button>
+</div>
+
+<!-- iPhone / Safari Helper Box (Hidden until tapped on iOS) -->
+<div id="ios-install-help" style="display: none; background: #1e293b; border: 1px solid #facc15; color: #f8fafc; border-radius: 12px; padding: 12px 16px; margin: 0 auto 14px; max-width: 480px; font-size: 0.88rem; line-height: 1.5;">
+  <strong>Install on iPhone / iPad:</strong> Tap the <strong>Share</strong> button (<strong>⎋</strong>) in Safari, then tap <strong>"Add to Home Screen"</strong>.
+</div>
+    
       <p class="subtitle">Choose a challenge below to test your knowledge and grow in faith</p>
     </header>
 
@@ -555,6 +569,42 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
   }
+  
+  let deferredPrompt;
+  const installBtn = document.getElementById('install-app-btn');
+  const iosHelp = document.getElementById('ios-install-help');
+
+  // Hide button if already opened as an installed app
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    installBtn.style.display = 'none';
+  }
+
+  // Capture Chrome / Android / Edge install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+
+  // Handle button click
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    } else {
+      iosHelp.style.display = iosHelp.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+
+  // Hide button once installation finishes
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+    iosHelp.style.display = 'none';
+  });
+
 </script>
 </body>
 </html>
